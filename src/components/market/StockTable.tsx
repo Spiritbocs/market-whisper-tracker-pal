@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Star, Flame, TrendingUp, ArrowUp, ArrowDown, TrendingDown, Skull } from 'lucide-react';
@@ -139,9 +140,9 @@ export const StockTable: React.FC<StockTableProps> = ({
                       <td className="p-4">
                         <div className="flex items-center space-x-2">
                           <Star 
-                            className={`w-4 h-4 cursor-pointer transition-colors ${
+                            className={`w-4 h-4 cursor-pointer transition-all duration-200 ${
                               isSelected 
-                                ? 'text-yellow-500 fill-current' 
+                                ? 'text-yellow-500 fill-current drop-shadow-md' 
                                 : 'text-muted-foreground hover:text-yellow-500'
                             }`}
                             onClick={(e) => handleStarClick(stock, e)}

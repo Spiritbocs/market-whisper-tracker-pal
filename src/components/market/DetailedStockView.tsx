@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -22,6 +21,16 @@ export const DetailedStockView: React.FC<DetailedStockViewProps> = ({
 }) => {
   const { watchlists, addStockToWatchlist, isAuthenticated } = useAuth();
   const [selectedWatchlist, setSelectedWatchlist] = useState<string>('');
+
+  // Set default watchlist when component loads
+  useEffect(() => {
+    if (isAuthenticated && watchlists.length > 0 && !selectedWatchlist) {
+      const defaultWatchlist = watchlists.find(w => w.is_default) || watchlists[0];
+      if (defaultWatchlist) {
+        setSelectedWatchlist(defaultWatchlist.id);
+      }
+    }
+  }, [watchlists, isAuthenticated, selectedWatchlist]);
 
   const handleAddToWatchlist = async (stock: Stock) => {
     if (!isAuthenticated) {

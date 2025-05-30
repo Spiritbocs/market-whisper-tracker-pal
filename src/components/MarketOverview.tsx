@@ -1,10 +1,10 @@
-
 import React, { useEffect, useState } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import { yahooFinanceService } from '../services/yahooFinanceService';
 import { Stock } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
 import { MarketStatsHeader } from './market/MarketStatsHeader';
 import { MarketSummaryCards } from './market/MarketSummaryCards';
@@ -185,7 +185,14 @@ export const MarketOverview: React.FC = () => {
 
   const handleBackToOverview = () => {
     setShowDetailedView(false);
-    setSelectedStocks([]);
+  };
+
+  const handleCompareSelected = () => {
+    if (selectedStocks.length < 2) {
+      toast.error('Please select at least 2 stocks to compare');
+      return;
+    }
+    setShowDetailedView(true);
   };
 
   const handleFilterChange = (filter: string) => {
@@ -254,7 +261,7 @@ export const MarketOverview: React.FC = () => {
 
   const displayWatchlistStocks = isAuthenticated ? watchlistStocks : guestWatchlistStocks;
 
-  // Show detailed view when stocks are selected
+  // Show detailed view when compare button is clicked
   if (showDetailedView && selectedStocks.length > 0) {
     return (
       <div className="w-full bg-background min-h-screen p-6">
@@ -307,10 +314,18 @@ export const MarketOverview: React.FC = () => {
 
           {selectedStocks.length > 0 && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-blue-800 font-medium">
-                {selectedStocks.length} stock(s) selected for detailed analysis. 
-                {selectedStocks.length < 6 && ` You can select up to ${6 - selectedStocks.length} more.`}
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-blue-800 font-medium">
+                  {selectedStocks.length} stock(s) selected for analysis. 
+                  {selectedStocks.length < 6 && ` You can select up to ${6 - selectedStocks.length} more.`}
+                </p>
+                {selectedStocks.length >= 2 && (
+                  <Button onClick={handleCompareSelected} className="ml-4">
+                    <BarChart3 className="w-4 h-4 mr-2" />
+                    Compare Selected ({selectedStocks.length})
+                  </Button>
+                )}
+              </div>
             </div>
           )}
 
