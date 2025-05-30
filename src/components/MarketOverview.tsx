@@ -183,269 +183,223 @@ export const MarketOverview: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Market Stats Header - Similar to CoinMarketCap */}
+      <div className="bg-muted/30 border-b">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex flex-wrap items-center gap-6 text-sm">
+            <div className="flex items-center space-x-2">
+              <span className="text-muted-foreground">Stocks:</span>
+              <span className="font-medium">{trendingStocks.length}</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-muted-foreground">Exchanges:</span>
+              <span className="font-medium">3</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-muted-foreground">Market Cap:</span>
+              <span className="font-medium">$45.2T</span>
+              <span className="text-green-600">↗ 2.1%</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-muted-foreground">24h Vol:</span>
+              <span className="font-medium">$2.1T</span>
+              <span className="text-green-600">↗ 5.4%</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-muted-foreground">Dominance:</span>
+              <span className="font-medium">AAPL: 7.2%</span>
+              <span className="font-medium">MSFT: 6.8%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="container mx-auto px-4 py-6">
-        {/* Header Stats - CoinMarketCap style */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          {marketIndices.map((index) => (
-            <Card key={index.symbol} className="border">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-semibold text-sm text-muted-foreground">{index.name}</h3>
-                    <p className="text-2xl font-bold">{index.price.toLocaleString()}</p>
-                  </div>
-                  <div className={`text-right ${index.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    <div className="flex items-center justify-end mb-1">
-                      {index.changePercent >= 0 ? <ArrowUp className="w-4 h-4 mr-1" /> : <ArrowDown className="w-4 h-4 mr-1" />}
-                      <span className="font-medium">{index.changePercent >= 0 ? '+' : ''}{index.changePercent.toFixed(2)}%</span>
+        {/* Trending section with cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+          {/* Trending Stocks card */}
+          <Card className="lg:col-span-2">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center">
+                <TrendingUp className="w-5 h-5 mr-2" />
+                Trending Stocks
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {trendingStocks.slice(0, 5).map((stock, index) => (
+                <div key={stock.symbol} className="flex items-center justify-between py-1">
+                  <div className="flex items-center space-x-3">
+                    <span className="text-sm text-muted-foreground w-4">{index + 1}</span>
+                    <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center text-xs font-medium">
+                      {stock.symbol.slice(0, 1)}
                     </div>
-                    <p className="text-sm">{index.change >= 0 ? '+' : ''}{index.change.toFixed(2)}</p>
+                    <span className="font-medium text-sm">{stock.symbol}</span>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-medium text-sm">${stock.price.toFixed(2)}</div>
+                    <div className={`text-xs ${stock.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {stock.changePercent >= 0 ? '↗' : '↘'} {Math.abs(stock.changePercent).toFixed(2)}%
+                    </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
+              ))}
+            </CardContent>
+          </Card>
+
+          {/* Market Cap card */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Market Cap</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">$45.2T</div>
+              <div className="text-green-600 text-sm flex items-center">
+                <ArrowUp className="w-3 h-3 mr-1" />
+                2.1%
+              </div>
+              <div className="mt-3 h-16 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded"></div>
+            </CardContent>
+          </Card>
+
+          {/* Volume card */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">24h Volume</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">$2.1T</div>
+              <div className="text-green-600 text-sm flex items-center">
+                <ArrowUp className="w-3 h-3 mr-1" />
+                5.4%
+              </div>
+              <div className="mt-3 h-16 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded"></div>
+            </CardContent>
+          </Card>
+
+          {/* Fear & Greed card */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Market Sentiment</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center">
+                <div className="text-2xl font-bold">72</div>
+                <div className="text-sm text-green-600">Greed</div>
+                <div className="mt-3 w-16 h-16 rounded-full border-4 border-green-500 mx-auto flex items-center justify-center">
+                  <div className="text-xs font-medium">72</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Left sidebar - My Watchlist */}
-          <div className="lg:col-span-1">
-            <Card className="h-fit">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">
-                    {isAuthenticated ? 'My Watchlist' : 'Popular Stocks'}
-                  </CardTitle>
-                  {isAuthenticated && (
-                    <button className="text-primary hover:text-primary/80">
-                      <Plus className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {!isAuthenticated ? (
-                  <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Sign in to create and manage watchlists
-                    </p>
-                    {displayWatchlistStocks.map((stock) => (
-                      <div key={stock.symbol} className="flex items-center justify-between p-2 hover:bg-accent rounded text-sm">
-                        <div className="flex-1">
-                          <div className="font-medium">{stock.symbol}</div>
-                          <div className="text-xs text-muted-foreground truncate">
-                            {stock.name}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-medium">${stock.price.toFixed(2)}</div>
-                          <div className={`text-xs flex items-center ${stock.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {stock.changePercent >= 0 ? <ArrowUp className="w-3 h-3 mr-1" /> : <ArrowDown className="w-3 h-3 mr-1" />}
-                            {stock.changePercent.toFixed(2)}%
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : displayWatchlistStocks.length > 0 ? (
-                  <div className="space-y-3">
-                    {displayWatchlistStocks.map((stock) => {
-                      const recommendation = getRecommendation(stock);
-                      const Icon = recommendation.icon;
-                      return (
-                        <div key={stock.symbol} className="p-3 border rounded-lg">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex-1">
-                              <div className="font-medium">{stock.symbol}</div>
-                              <div className="text-xs text-muted-foreground truncate">
-                                {stock.name}
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="font-medium">${stock.price.toFixed(2)}</div>
-                              <div className={`text-xs flex items-center ${stock.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                {stock.changePercent >= 0 ? <ArrowUp className="w-3 h-3 mr-1" /> : <ArrowDown className="w-3 h-3 mr-1" />}
-                                {stock.changePercent.toFixed(2)}%
-                              </div>
-                            </div>
-                          </div>
-                          <div className="border-t pt-2">
-                            <div className={`flex items-center text-xs ${recommendation.color} font-medium mb-1`}>
-                              <Icon className="w-3 h-3 mr-1" />
-                              {recommendation.action}
-                            </div>
-                            <p className="text-xs text-muted-foreground">{recommendation.reason}</p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-sm text-muted-foreground">
-                      Your watchlist is empty. Add some stocks to get started.
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Center content - Main table */}
-          <div className="lg:col-span-2">
-            <div className="space-y-6">
-              {/* Header */}
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h1 className="text-2xl font-bold flex items-center">
-                    <Activity className="w-6 h-6 mr-2 text-green-500" />
-                    Live Market Data
-                  </h1>
-                  <div className="flex items-center space-x-2 text-sm text-green-600">
-                    <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                    <span>LIVE - {new Date().toLocaleTimeString()}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Filters */}
-              <div className="flex items-center space-x-4 border-b pb-4">
-                {['All', 'Active', 'Gainers', 'Losers'].map((filter) => (
-                  <button
-                    key={filter}
-                    onClick={() => handleFilterChange(filter)}
-                    className={`px-4 py-2 text-sm rounded-full transition-colors ${
-                      activeFilter === filter
-                        ? 'bg-primary text-primary-foreground'
-                        : 'hover:bg-accent'
-                    }`}
-                  >
-                    {filter}
-                  </button>
-                ))}
-              </div>
-
-              {/* Stock table */}
-              {trendingStocks.length > 0 && (
-                <Card>
-                  <CardContent className="p-0">
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead className="bg-muted/50">
-                          <tr className="text-sm text-muted-foreground">
-                            <th className="text-left p-4">#</th>
-                            <th className="text-left p-4">Name</th>
-                            <th className="text-right p-4">Price</th>
-                            <th className="text-right p-4">24h %</th>
-                            <th className="text-right p-4">Volume</th>
-                            <th className="text-right p-4">High</th>
-                            <th className="text-right p-4">Low</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {filteredStocks.map((stock, index) => (
-                            <tr key={stock.symbol} className="border-b hover:bg-accent/50">
-                              <td className="p-4 font-medium">{index + 1}</td>
-                              <td className="p-4">
-                                <div className="flex items-center space-x-3">
-                                  <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-xs font-medium">
-                                    {stock.symbol.slice(0, 2)}
-                                  </div>
-                                  <div>
-                                    <div className="font-medium">{stock.symbol}</div>
-                                    <div className="text-xs text-muted-foreground truncate max-w-32">
-                                      {stock.name}
-                                    </div>
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="text-right p-4 font-medium">
-                                ${stock.price.toFixed(2)}
-                              </td>
-                              <td className={`text-right p-4 font-medium ${stock.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                <div className="flex items-center justify-end">
-                                  {stock.changePercent >= 0 ? <ArrowUp className="w-3 h-3 mr-1" /> : <ArrowDown className="w-3 h-3 mr-1" />}
-                                  {stock.changePercent >= 0 ? '+' : ''}{stock.changePercent.toFixed(2)}%
-                                </div>
-                              </td>
-                              <td className="text-right p-4 text-sm text-muted-foreground">
-                                {stock.volume ? `${(stock.volume / 1000000).toFixed(1)}M` : 'N/A'}
-                              </td>
-                              <td className="text-right p-4 text-sm text-muted-foreground">
-                                ${stock.high ? stock.high.toFixed(2) : 'N/A'}
-                              </td>
-                              <td className="text-right p-4 text-sm text-muted-foreground">
-                                ${stock.low ? stock.low.toFixed(2) : 'N/A'}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+        {/* Main content area */}
+        <div className="space-y-6">
+          {/* Header with filters */}
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold">Today's Stock Prices by Market Cap</h1>
+            <div className="flex items-center space-x-2 text-sm text-green-600">
+              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+              <span>LIVE - {new Date().toLocaleTimeString()}</span>
             </div>
           </div>
 
-          {/* Right sidebar - Top gainers and losers */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* Top Gainers */}
-            {topGainers.length > 0 && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg flex items-center">
-                    <TrendingUp className="w-4 h-4 mr-2 text-green-600" />
-                    Top Gainers
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {topGainers.map((stock) => (
-                    <div key={stock.symbol} className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="font-medium text-sm">{stock.symbol}</div>
-                        <div className="text-xs text-muted-foreground">${stock.price.toFixed(2)}</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-xs text-green-600 flex items-center">
-                          <ArrowUp className="w-3 h-3 mr-1" />
-                          +{stock.changePercent.toFixed(2)}%
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Top Losers */}
-            {topLosers.length > 0 && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg flex items-center">
-                    <TrendingDown className="w-4 h-4 mr-2 text-red-600" />
-                    Top Losers
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {topLosers.map((stock) => (
-                    <div key={stock.symbol} className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="font-medium text-sm">{stock.symbol}</div>
-                        <div className="text-xs text-muted-foreground">${stock.price.toFixed(2)}</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-xs text-red-600 flex items-center">
-                          <ArrowDown className="w-3 h-3 mr-1" />
-                          {stock.changePercent.toFixed(2)}%
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
+          {/* Filter tabs */}
+          <div className="flex items-center space-x-1">
+            {['All', 'Active', 'Gainers', 'Losers'].map((filter) => (
+              <button
+                key={filter}
+                onClick={() => handleFilterChange(filter)}
+                className={`px-4 py-2 text-sm rounded-lg transition-colors ${
+                  activeFilter === filter
+                    ? 'bg-primary text-primary-foreground'
+                    : 'hover:bg-muted text-muted-foreground'
+                }`}
+              >
+                {filter}
+              </button>
+            ))}
           </div>
+
+          {/* Stock table */}
+          {trendingStocks.length > 0 && (
+            <Card>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-muted/50 border-b">
+                      <tr className="text-sm text-muted-foreground">
+                        <th className="text-left p-4 font-medium">#</th>
+                        <th className="text-left p-4 font-medium">Name</th>
+                        <th className="text-right p-4 font-medium">Price</th>
+                        <th className="text-right p-4 font-medium">1h %</th>
+                        <th className="text-right p-4 font-medium">24h %</th>
+                        <th className="text-right p-4 font-medium">7d %</th>
+                        <th className="text-right p-4 font-medium">Market Cap</th>
+                        <th className="text-right p-4 font-medium">Volume(24h)</th>
+                        <th className="text-right p-4 font-medium">Last 7 Days</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredStocks.map((stock, index) => (
+                        <tr key={stock.symbol} className="border-b hover:bg-muted/30 transition-colors">
+                          <td className="p-4">
+                            <div className="flex items-center space-x-2">
+                              <Star className="w-4 h-4 text-muted-foreground hover:text-yellow-500 cursor-pointer" />
+                              <span className="font-medium">{index + 1}</span>
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-sm font-medium">
+                                {stock.symbol.slice(0, 2)}
+                              </div>
+                              <div>
+                                <div className="font-semibold">{stock.symbol}</div>
+                                <div className="text-sm text-muted-foreground truncate max-w-32">
+                                  {stock.name}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="text-right p-4">
+                            <div className="font-semibold">${stock.price.toFixed(2)}</div>
+                          </td>
+                          <td className={`text-right p-4 ${stock.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            <div className="flex items-center justify-end">
+                              {stock.changePercent >= 0 ? '↗' : '↘'}
+                              <span className="ml-1">{Math.abs(stock.changePercent).toFixed(2)}%</span>
+                            </div>
+                          </td>
+                          <td className={`text-right p-4 ${stock.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            <div className="flex items-center justify-end">
+                              {stock.changePercent >= 0 ? '↗' : '↘'}
+                              <span className="ml-1">{Math.abs(stock.changePercent).toFixed(2)}%</span>
+                            </div>
+                          </td>
+                          <td className={`text-right p-4 ${stock.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            <div className="flex items-center justify-end">
+                              {stock.changePercent >= 0 ? '↗' : '↘'}
+                              <span className="ml-1">{Math.abs(stock.changePercent).toFixed(2)}%</span>
+                            </div>
+                          </td>
+                          <td className="text-right p-4 text-muted-foreground">
+                            {stock.marketCap ? `$${(stock.marketCap / 1000000000).toFixed(1)}B` : 'N/A'}
+                          </td>
+                          <td className="text-right p-4 text-muted-foreground">
+                            {stock.volume ? `$${(stock.volume / 1000000).toFixed(1)}M` : 'N/A'}
+                          </td>
+                          <td className="text-right p-4">
+                            <div className="w-20 h-8 bg-gradient-to-r from-green-500/20 to-red-500/20 rounded"></div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>
