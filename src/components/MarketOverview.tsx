@@ -243,10 +243,10 @@ export const MarketOverview: React.FC = () => {
   const displayWatchlistStocks = isAuthenticated ? watchlistStocks : guestWatchlistStocks;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="space-y-6 bg-background">
       {/* Market Stats Header - Similar to CoinMarketCap */}
       <div className="bg-muted/30 border-b">
-        <div className="max-w-[1400px] mx-auto px-4 py-4">
+        <div className="w-full px-4 py-4">
           <div className="flex flex-wrap items-center gap-6 text-sm">
             <div className="flex items-center space-x-2">
               <span className="text-muted-foreground">Stocks:</span>
@@ -275,7 +275,7 @@ export const MarketOverview: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-[1400px] mx-auto px-4 py-6">
+      <div className="w-full px-4 py-6">
         {/* Trending section with cards - Reduced height */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
           {/* Trending Stocks card */}
