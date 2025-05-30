@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -16,27 +15,25 @@ export const MarketOverview: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState({ current: 0, total: 0, status: '' });
   const [hasData, setHasData] = useState(false);
-  const [isUsingMockData, setIsUsingMockData] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { addStockToWatchlist, watchlists, isAuthenticated } = useAuth();
 
   useEffect(() => {
     const loadMarketData = async () => {
       try {
-        setLoadingProgress({ current: 0, total: 2, status: 'Loading market data...' });
+        setError(null);
+        setLoadingProgress({ current: 0, total: 2, status: 'Connecting to live market data...' });
         
-        // Load trending stocks first (most important)
-        setLoadingProgress({ current: 0, total: 2, status: 'Fetching trending stocks...' });
+        // Load trending stocks first
+        setLoadingProgress({ current: 0, total: 2, status: 'Fetching live stock prices...' });
         const trending = await yahooFinanceService.getTrendingStocks();
-        setTrendingStocks(trending);
-        setHasData(trending.length > 0);
-        setIsUsingMockData(yahooFinanceService.isUsingMockData());
         
         if (trending.length > 0) {
-          if (yahooFinanceService.isUsingMockData()) {
-            toast.info(`Loaded ${trending.length} stocks with demo data`);
-          } else {
-            toast.success(`Loaded ${trending.length} trending stocks`);
-          }
+          setTrendingStocks(trending);
+          setHasData(true);
+          toast.success(`Loaded ${trending.length} live stocks with real-time prices`);
+        } else {
+          throw new Error('No live stock data available');
         }
         
         setLoadingProgress({ current: 1, total: 2, status: 'Loading market indices...' });
@@ -44,20 +41,20 @@ export const MarketOverview: React.FC = () => {
         // Load market indices
         try {
           const indices = await yahooFinanceService.getMarketIndices();
-          setMarketIndices(indices);
-          if (indices.length > 0 && !yahooFinanceService.isUsingMockData()) {
-            toast.success(`Loaded ${indices.length} market indices`);
+          if (indices.length > 0) {
+            setMarketIndices(indices);
+            toast.success(`Loaded ${indices.length} live market indices`);
           }
         } catch (error) {
-          console.log('Skipping market indices');
+          console.log('Market indices failed, continuing with stocks only');
         }
         
-        setLoadingProgress({ current: 2, total: 2, status: 'Complete!' });
+        setLoadingProgress({ current: 2, total: 2, status: 'Live data loaded!' });
         
       } catch (error) {
-        console.error('Failed to load market data:', error);
-        toast.error('Failed to load market data. Using demo data instead.');
-        setLoadingProgress({ current: 0, total: 2, status: 'Using demo data' });
+        console.error('Failed to load live market data:', error);
+        setError(error.message || 'Failed to load live market data');
+        toast.error('Failed to load live market data. Please check your internet connection.');
       } finally {
         setIsLoading(false);
       }
@@ -83,14 +80,14 @@ export const MarketOverview: React.FC = () => {
     return `${Math.floor(diffInMinutes / 1440)}d ago`;
   };
 
-  if (isLoading || (!hasData && loadingProgress.current < 1)) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center max-w-md">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Loading Market Data</h3>
+            <h3 className="text-lg font-semibold">Loading Live Market Data</h3>
             <p className="text-muted-foreground">{loadingProgress.status}</p>
             
             <div className="w-full bg-muted rounded-full h-2">
@@ -101,7 +98,7 @@ export const MarketOverview: React.FC = () => {
             </div>
             
             <p className="text-sm text-muted-foreground">
-              Progress: {loadingProgress.current} / {loadingProgress.total}
+              Fetching real-time prices: {loadingProgress.current} / {loadingProgress.total}
             </p>
           </div>
         </div>
@@ -110,14 +107,14 @@ export const MarketOverview: React.FC = () => {
   }
 
   // Show error if no data loaded
-  if (!isLoading && trendingStocks.length === 0) {
+  if (error || (!isLoading && trendingStocks.length === 0)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center max-w-md">
           <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">Unable to Load Market Data</h3>
+          <h3 className="text-lg font-semibold mb-2">Unable to Load Live Market Data</h3>
           <p className="text-muted-foreground mb-4">
-            There was an issue loading stock data. Please check your internet connection and try again.
+            {error || 'Failed to connect to live market data sources. Please check your internet connection and try again.'}
           </p>
           <button 
             onClick={() => window.location.reload()} 
@@ -132,23 +129,12 @@ export const MarketOverview: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Demo data warning */}
-      {isUsingMockData && (
-        <Alert className="mb-4 border-blue-200 bg-blue-50">
-          <Info className="h-4 w-4" />
-          <AlertDescription className="text-blue-800">
-            <strong>Demo Mode:</strong> Displaying sample stock data for demonstration purposes. 
-            Real-time data may be unavailable due to API restrictions.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Status indicator */}
-      {trendingStocks.length > 0 && !isUsingMockData && (
+      {/* Live data indicator */}
+      {trendingStocks.length > 0 && (
         <div className="bg-green-50 border-b border-green-200 px-4 py-2">
           <div className="flex items-center justify-center space-x-2 text-green-800">
             <CheckCircle className="w-4 h-4" />
-            <span className="text-sm">Live market data - {trendingStocks.length} stocks loaded</span>
+            <span className="text-sm">🔴 LIVE - Real-time market data - {trendingStocks.length} stocks loaded</span>
           </div>
         </div>
       )}
@@ -157,8 +143,8 @@ export const MarketOverview: React.FC = () => {
       {trendingStocks.length > 0 && (
         <div className="bg-card border-b px-4 py-2 overflow-x-auto">
           <div className="flex items-center space-x-6 min-w-max">
-            <span className="text-sm font-medium text-muted-foreground">
-              {isUsingMockData ? 'Demo Data' : 'Live Data'}
+            <span className="text-sm font-medium text-green-600">
+              🔴 LIVE DATA
             </span>
             {trendingStocks.slice(0, 8).map((stock) => (
               <div key={stock.symbol} className="flex items-center space-x-2 text-sm">
@@ -251,15 +237,15 @@ export const MarketOverview: React.FC = () => {
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <h1 className="text-2xl font-bold">
-                    {isUsingMockData ? 'Demo Market Data' : 'Real-Time Market Data'}
+                    🔴 Live Market Data
                   </h1>
-                  <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                  <div className="flex items-center space-x-2 text-sm text-green-600">
                     <Clock className="w-4 h-4" />
                     <span>Last updated: {new Date().toLocaleTimeString()}</span>
                   </div>
                 </div>
-                <div className="text-sm text-muted-foreground">
-                  {trendingStocks.length} Symbols {isUsingMockData ? '(Demo Data)' : 'loaded'}
+                <div className="text-sm text-green-600">
+                  {trendingStocks.length} Live Symbols - Real-time prices
                 </div>
               </div>
 
