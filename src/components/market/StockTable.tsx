@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Star, Flame, TrendingUp, ArrowUp, ArrowDown, TrendingDown, Skull } from 'lucide-react';
@@ -11,6 +10,8 @@ interface StockTableProps {
   sortOrder: string;
   onSort: (column: string) => void;
   tableColumns: string[];
+  selectedStocks: Stock[];
+  onToggleStock: (stock: Stock) => void;
 }
 
 const getPerformanceIndicator = (changePercent: number) => {
@@ -60,12 +61,25 @@ export const StockTable: React.FC<StockTableProps> = ({
   sortOrder,
   onSort,
   tableColumns,
+  selectedStocks,
+  onToggleStock,
 }) => {
   const displayedStocks = filteredStocks.slice(0, rowsToShow);
   
+  const isStockSelected = (stock: Stock) => {
+    return selectedStocks.some(s => s.symbol === stock.symbol);
+  };
+
+  const handleStarClick = (stock: Stock, event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    onToggleStock(stock);
+  };
+
   console.log('StockTable: rowsToShow =', rowsToShow);
   console.log('StockTable: filteredStocks.length =', filteredStocks.length);
   console.log('StockTable: displayedStocks.length =', displayedStocks.length);
+  console.log('StockTable: selectedStocks.length =', selectedStocks.length);
 
   return (
     <Card className="w-full">
@@ -117,13 +131,21 @@ export const StockTable: React.FC<StockTableProps> = ({
               {displayedStocks.map((stock, index) => {
                 const performance = getPerformanceIndicator(stock.changePercent);
                 const PerformanceIcon = performance.icon;
+                const isSelected = isStockSelected(stock);
                 
                 return (
                   <tr key={stock.symbol} className="border-b hover:bg-muted/30 transition-colors">
                     {tableColumns.includes('rank') && (
                       <td className="p-4">
                         <div className="flex items-center space-x-2">
-                          <Star className="w-4 h-4 text-muted-foreground hover:text-yellow-500 cursor-pointer" />
+                          <Star 
+                            className={`w-4 h-4 cursor-pointer transition-colors ${
+                              isSelected 
+                                ? 'text-yellow-500 fill-current' 
+                                : 'text-muted-foreground hover:text-yellow-500'
+                            }`}
+                            onClick={(e) => handleStarClick(stock, e)}
+                          />
                           <span className="font-medium">{index + 1}</span>
                         </div>
                       </td>

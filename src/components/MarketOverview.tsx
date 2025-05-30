@@ -11,6 +11,7 @@ import { MarketSummaryCards } from './market/MarketSummaryCards';
 import { MyWatchlistCard } from './market/MyWatchlistCard';
 import { MarketFilters } from './market/MarketFilters';
 import { StockTable } from './market/StockTable';
+import { DetailedStockView } from './market/DetailedStockView';
 import { exportToCSV, sortStocks, filterStocks } from '../utils/marketUtils';
 
 // Sample chart data
@@ -57,6 +58,8 @@ export const MarketOverview: React.FC = () => {
   const [watchlistStocks, setWatchlistStocks] = useState<Stock[]>([]);
   const [guestWatchlistStocks, setGuestWatchlistStocks] = useState<Stock[]>([]);
   const [filteredStocks, setFilteredStocks] = useState<Stock[]>([]);
+  const [selectedStocks, setSelectedStocks] = useState<Stock[]>([]);
+  const [showDetailedView, setShowDetailedView] = useState(false);
   const [activeFilter, setActiveFilter] = useState(() => loadFromLocalStorage('market-active-filter', 'All'));
   const [tableColumns, setTableColumns] = useState(() => loadFromLocalStorage('market-table-columns', ['rank', 'name', 'price', '1h', '24h', '7d', 'marketCap', 'volume', 'chart']));
   const [sortBy, setSortBy] = useState(() => loadFromLocalStorage('market-sort-by', 'marketCap'));
@@ -88,6 +91,15 @@ export const MarketOverview: React.FC = () => {
   useEffect(() => {
     saveToLocalStorage('market-rows-to-show', rowsToShow);
   }, [rowsToShow]);
+
+  // Watch for selected stocks changes to show detailed view
+  useEffect(() => {
+    if (selectedStocks.length > 0 && selectedStocks.length <= 6) {
+      setShowDetailedView(true);
+    } else if (selectedStocks.length === 0) {
+      setShowDetailedView(false);
+    }
+  }, [selectedStocks]);
 
   useEffect(() => {
     const loadMarketData = async () => {
@@ -150,6 +162,31 @@ export const MarketOverview: React.FC = () => {
 
     loadUserWatchlistStocks();
   }, [watchlists, isAuthenticated]);
+
+  const handleToggleStock = (stock: Stock) => {
+    setSelectedStocks(prev => {
+      const isAlreadySelected = prev.some(s => s.symbol === stock.symbol);
+      
+      if (isAlreadySelected) {
+        return prev.filter(s => s.symbol !== stock.symbol);
+      } else {
+        if (prev.length >= 6) {
+          toast.error('You can select up to 6 stocks for detailed analysis');
+          return prev;
+        }
+        return [...prev, stock];
+      }
+    });
+  };
+
+  const handleRemoveSelectedStock = (symbol: string) => {
+    setSelectedStocks(prev => prev.filter(s => s.symbol !== symbol));
+  };
+
+  const handleBackToOverview = () => {
+    setShowDetailedView(false);
+    setSelectedStocks([]);
+  };
 
   const handleFilterChange = (filter: string) => {
     setActiveFilter(filter);
@@ -217,6 +254,19 @@ export const MarketOverview: React.FC = () => {
 
   const displayWatchlistStocks = isAuthenticated ? watchlistStocks : guestWatchlistStocks;
 
+  // Show detailed view when stocks are selected
+  if (showDetailedView && selectedStocks.length > 0) {
+    return (
+      <div className="w-full bg-background min-h-screen p-6">
+        <DetailedStockView
+          selectedStocks={selectedStocks}
+          onBack={handleBackToOverview}
+          onRemoveStock={handleRemoveSelectedStock}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="w-full bg-background min-h-screen">
       <MarketStatsHeader stockCount={trendingStocks.length} />
@@ -255,6 +305,15 @@ export const MarketOverview: React.FC = () => {
             onExportCSV={handleExportCSV}
           />
 
+          {selectedStocks.length > 0 && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-blue-800 font-medium">
+                {selectedStocks.length} stock(s) selected for detailed analysis. 
+                {selectedStocks.length < 6 && ` You can select up to ${6 - selectedStocks.length} more.`}
+              </p>
+            </div>
+          )}
+
           {trendingStocks.length > 0 && (
             <StockTable
               filteredStocks={filteredStocks}
@@ -263,6 +322,8 @@ export const MarketOverview: React.FC = () => {
               sortOrder={sortOrder}
               onSort={handleSort}
               tableColumns={tableColumns}
+              selectedStocks={selectedStocks}
+              onToggleStock={handleToggleStock}
             />
           )}
         </div>
