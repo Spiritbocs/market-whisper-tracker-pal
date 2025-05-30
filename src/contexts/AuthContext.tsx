@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { AuthState, Profile, Watchlist } from '../types';
@@ -93,6 +92,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           *,
           watchlist_stocks (
             id,
+            watchlist_id,
             symbol,
             added_at
           )
