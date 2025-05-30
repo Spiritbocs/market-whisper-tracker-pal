@@ -32,22 +32,62 @@ const volumeData = [
   { time: '14:00', value: 2.1 },
 ];
 
+// Helper functions for localStorage
+const saveToLocalStorage = (key: string, value: any) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (error) {
+    console.error('Failed to save to localStorage:', error);
+  }
+};
+
+const loadFromLocalStorage = (key: string, defaultValue: any) => {
+  try {
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : defaultValue;
+  } catch (error) {
+    console.error('Failed to load from localStorage:', error);
+    return defaultValue;
+  }
+};
+
 export const MarketOverview: React.FC = () => {
   const [trendingStocks, setTrendingStocks] = useState<Stock[]>([]);
   const [marketIndices, setMarketIndices] = useState<Stock[]>([]);
   const [watchlistStocks, setWatchlistStocks] = useState<Stock[]>([]);
   const [guestWatchlistStocks, setGuestWatchlistStocks] = useState<Stock[]>([]);
   const [filteredStocks, setFilteredStocks] = useState<Stock[]>([]);
-  const [activeFilter, setActiveFilter] = useState('All');
-  const [tableColumns, setTableColumns] = useState(['rank', 'name', 'price', '1h', '24h', '7d', 'marketCap', 'volume', 'chart']);
-  const [sortBy, setSortBy] = useState('marketCap');
-  const [sortOrder, setSortOrder] = useState('desc');
+  const [activeFilter, setActiveFilter] = useState(() => loadFromLocalStorage('market-active-filter', 'All'));
+  const [tableColumns, setTableColumns] = useState(() => loadFromLocalStorage('market-table-columns', ['rank', 'name', 'price', '1h', '24h', '7d', 'marketCap', 'volume', 'chart']));
+  const [sortBy, setSortBy] = useState(() => loadFromLocalStorage('market-sort-by', 'marketCap'));
+  const [sortOrder, setSortOrder] = useState(() => loadFromLocalStorage('market-sort-order', 'desc'));
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showWatchlistModal, setShowWatchlistModal] = useState(false);
   const [showCustomizeModal, setShowCustomizeModal] = useState(false);
-  const [rowsToShow, setRowsToShow] = useState(8);
+  const [rowsToShow, setRowsToShow] = useState(() => loadFromLocalStorage('market-rows-to-show', 8));
   const { addStockToWatchlist, watchlists, isAuthenticated, loadWatchlists } = useAuth();
+
+  // Save settings to localStorage whenever they change
+  useEffect(() => {
+    saveToLocalStorage('market-active-filter', activeFilter);
+  }, [activeFilter]);
+
+  useEffect(() => {
+    saveToLocalStorage('market-table-columns', tableColumns);
+  }, [tableColumns]);
+
+  useEffect(() => {
+    saveToLocalStorage('market-sort-by', sortBy);
+  }, [sortBy]);
+
+  useEffect(() => {
+    saveToLocalStorage('market-sort-order', sortOrder);
+  }, [sortOrder]);
+
+  useEffect(() => {
+    saveToLocalStorage('market-rows-to-show', rowsToShow);
+  }, [rowsToShow]);
 
   useEffect(() => {
     const loadMarketData = async () => {
@@ -60,7 +100,9 @@ export const MarketOverview: React.FC = () => {
         const trending = await yahooFinanceService.getTrendingStocks();
         if (trending.length > 0) {
           setTrendingStocks(trending);
-          setFilteredStocks(trending);
+          const filtered = filterStocks(trending, activeFilter);
+          const sorted = sortStocks(filtered, sortBy, sortOrder);
+          setFilteredStocks(sorted);
           toast.success(`🔴 LIVE: Loaded ${trending.length} real stocks`);
         }
         
@@ -84,7 +126,7 @@ export const MarketOverview: React.FC = () => {
     };
 
     loadMarketData();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, activeFilter, sortBy, sortOrder]);
 
   useEffect(() => {
     const loadUserWatchlistStocks = async () => {
@@ -112,7 +154,8 @@ export const MarketOverview: React.FC = () => {
   const handleFilterChange = (filter: string) => {
     setActiveFilter(filter);
     const filtered = filterStocks(trendingStocks, filter);
-    setFilteredStocks(filtered);
+    const sorted = sortStocks(filtered, sortBy, sortOrder);
+    setFilteredStocks(sorted);
   };
 
   const handleSort = (column: string) => {
@@ -135,6 +178,11 @@ export const MarketOverview: React.FC = () => {
         ? prev.filter(col => col !== columnId)
         : [...prev, columnId]
     );
+  };
+
+  const handleRowsToShowChange = (rows: number) => {
+    console.log('Setting rows to show:', rows);
+    setRowsToShow(rows);
   };
 
   if (isLoading) {
@@ -203,7 +251,7 @@ export const MarketOverview: React.FC = () => {
             tableColumns={tableColumns}
             onColumnToggle={handleColumnToggle}
             rowsToShow={rowsToShow}
-            setRowsToShow={setRowsToShow}
+            setRowsToShow={handleRowsToShowChange}
             onExportCSV={handleExportCSV}
           />
 

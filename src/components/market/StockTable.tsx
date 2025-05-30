@@ -61,6 +61,12 @@ export const StockTable: React.FC<StockTableProps> = ({
   onSort,
   tableColumns,
 }) => {
+  const displayedStocks = filteredStocks.slice(0, rowsToShow);
+  
+  console.log('StockTable: rowsToShow =', rowsToShow);
+  console.log('StockTable: filteredStocks.length =', filteredStocks.length);
+  console.log('StockTable: displayedStocks.length =', displayedStocks.length);
+
   return (
     <Card className="w-full">
       <CardContent className="p-0">
@@ -108,7 +114,7 @@ export const StockTable: React.FC<StockTableProps> = ({
               </tr>
             </thead>
             <tbody>
-              {filteredStocks.slice(0, rowsToShow).map((stock, index) => {
+              {displayedStocks.map((stock, index) => {
                 const performance = getPerformanceIndicator(stock.changePercent);
                 const PerformanceIcon = performance.icon;
                 

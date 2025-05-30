@@ -45,6 +45,12 @@ export const MarketFilters: React.FC<MarketFiltersProps> = ({
   setRowsToShow,
   onExportCSV,
 }) => {
+  const handleRowsChange = (value: string) => {
+    const rows = Number(value);
+    console.log('MarketFilters: Changing rows to:', rows);
+    setRowsToShow(rows);
+  };
+
   return (
     <>
       {/* Header with filters and customization */}
@@ -84,7 +90,7 @@ export const MarketFilters: React.FC<MarketFiltersProps> = ({
                 </div>
                 <div>
                   <h4 className="font-medium mb-3">Rows to show</h4>
-                  <Select value={rowsToShow.toString()} onValueChange={(value) => setRowsToShow(Number(value))}>
+                  <Select value={rowsToShow.toString()} onValueChange={handleRowsChange}>
                     <SelectTrigger className="w-32">
                       <SelectValue />
                     </SelectTrigger>
