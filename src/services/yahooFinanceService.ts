@@ -242,7 +242,7 @@ export const yahooFinanceService = {
     return stocks;
   },
 
-  async searchSymbols(query: string): Promise<any[]> => {
+  async searchSymbols(query: string): Promise<any[]> {
     if (query.length < 2) return [];
     
     // If API is blocked, return mock search results
