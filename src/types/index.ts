@@ -19,7 +19,7 @@ export interface Watchlist {
   is_default: boolean;
   created_at: string;
   updated_at: string;
-  stocks?: WatchlistStock[];
+  watchlist_stocks?: WatchlistStock[];
 }
 
 export interface WatchlistStock {
