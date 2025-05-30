@@ -1,8 +1,7 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StockCard } from './StockCard';
-import { alphaVantageService } from '../services/alphaVantageService';
+import { yahooFinanceService } from '../services/yahooFinanceService';
 import { Stock, MarketNews } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { TrendingUp, Globe, Clock, ExternalLink, Plus, AlertCircle, CheckCircle } from 'lucide-react';
@@ -20,11 +19,11 @@ export const MarketOverview: React.FC = () => {
   useEffect(() => {
     const loadMarketData = async () => {
       try {
-        setLoadingProgress({ current: 0, total: 3, status: 'Starting to load market data...' });
+        setLoadingProgress({ current: 0, total: 2, status: 'Loading real-time market data...' });
         
         // Load trending stocks first (most important)
-        setLoadingProgress({ current: 0, total: 3, status: 'Loading trending stocks... (this may take a few minutes due to API rate limits)' });
-        const trending = await alphaVantageService.getTrendingStocks();
+        setLoadingProgress({ current: 0, total: 2, status: 'Fetching trending stocks from Yahoo Finance...' });
+        const trending = await yahooFinanceService.getTrendingStocks();
         setTrendingStocks(trending);
         setHasData(trending.length > 0);
         
@@ -32,40 +31,26 @@ export const MarketOverview: React.FC = () => {
           toast.success(`Loaded ${trending.length} trending stocks`);
         }
         
-        setLoadingProgress({ current: 1, total: 3, status: 'Loading market indices...' });
+        setLoadingProgress({ current: 1, total: 2, status: 'Loading market indices...' });
         
-        // Load market indices (less critical)
+        // Load market indices
         try {
-          const indices = await alphaVantageService.getMarketIndices();
+          const indices = await yahooFinanceService.getMarketIndices();
           setMarketIndices(indices);
           if (indices.length > 0) {
             toast.success(`Loaded ${indices.length} market indices`);
           }
         } catch (error) {
-          console.log('Skipping market indices due to rate limits');
-          toast.info('Skipping market indices due to API limits');
+          console.log('Skipping market indices');
+          toast.info('Market indices temporarily unavailable');
         }
         
-        setLoadingProgress({ current: 2, total: 3, status: 'Loading market news...' });
-        
-        // Load news (least critical)
-        try {
-          const news = await alphaVantageService.getMarketNews();
-          setMarketNews(news);
-          if (news.length > 0) {
-            toast.success(`Loaded ${news.length} news articles`);
-          }
-        } catch (error) {
-          console.log('Skipping market news due to rate limits');
-          toast.info('Skipping market news due to API limits');
-        }
-        
-        setLoadingProgress({ current: 3, total: 3, status: 'Complete!' });
+        setLoadingProgress({ current: 2, total: 2, status: 'Complete!' });
         
       } catch (error) {
         console.error('Failed to load market data:', error);
         toast.error('Failed to load market data. Please try again later.');
-        setLoadingProgress({ current: 0, total: 3, status: 'Failed to load data' });
+        setLoadingProgress({ current: 0, total: 2, status: 'Failed to load data' });
       } finally {
         setIsLoading(false);
       }
@@ -98,7 +83,7 @@ export const MarketOverview: React.FC = () => {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Loading Real Market Data</h3>
+            <h3 className="text-lg font-semibold">Loading Real-Time Market Data</h3>
             <p className="text-muted-foreground">{loadingProgress.status}</p>
             
             <div className="w-full bg-muted rounded-full h-2">
@@ -112,12 +97,12 @@ export const MarketOverview: React.FC = () => {
               Progress: {loadingProgress.current} / {loadingProgress.total}
             </p>
             
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-800">
               <div className="flex items-start space-x-2">
-                <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="font-medium">API Rate Limiting</p>
-                  <p>We're using real market data with a 15-second delay between requests to respect API limits. Data is cached for 24 hours.</p>
+                  <p className="font-medium">Fast Loading</p>
+                  <p>Real-time data from Yahoo Finance loads in under 5 seconds with automatic caching.</p>
                 </div>
               </div>
             </div>
@@ -127,7 +112,7 @@ export const MarketOverview: React.FC = () => {
     );
   }
 
-  // Show partial data if we have some stocks but loading is complete
+  // Show error if no data loaded
   if (!isLoading && trendingStocks.length === 0) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -135,7 +120,7 @@ export const MarketOverview: React.FC = () => {
           <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">Unable to Load Market Data</h3>
           <p className="text-muted-foreground mb-4">
-            We've hit the daily API rate limit. Real market data will be available again tomorrow or you can upgrade your Alpha Vantage plan.
+            There was an issue connecting to Yahoo Finance. Please check your internet connection and try again.
           </p>
           <button 
             onClick={() => window.location.reload()} 
@@ -155,7 +140,7 @@ export const MarketOverview: React.FC = () => {
         <div className="bg-green-50 border-b border-green-200 px-4 py-2">
           <div className="flex items-center justify-center space-x-2 text-green-800">
             <CheckCircle className="w-4 h-4" />
-            <span className="text-sm">Live market data loaded - {trendingStocks.length} stocks available</span>
+            <span className="text-sm">Live market data from Yahoo Finance - {trendingStocks.length} stocks loaded instantly</span>
           </div>
         </div>
       )}
@@ -255,14 +240,14 @@ export const MarketOverview: React.FC = () => {
               {/* Watchlist header */}
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h1 className="text-2xl font-bold">Live Market Data</h1>
+                  <h1 className="text-2xl font-bold">Real-Time Market Data</h1>
                   <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                     <Clock className="w-4 h-4" />
                     <span>Last updated: {new Date().toLocaleTimeString()}</span>
                   </div>
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  {trendingStocks.length} Symbols loaded
+                  {trendingStocks.length} Symbols loaded from Yahoo Finance
                 </div>
               </div>
 

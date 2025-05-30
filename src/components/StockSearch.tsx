@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Search, Plus } from 'lucide-react';
-import { alphaVantageService } from '../services/alphaVantageService';
+import { yahooFinanceService } from '../services/yahooFinanceService';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -28,8 +28,8 @@ export const StockSearch: React.FC<StockSearchProps> = ({ onStockSelect, watchli
 
       setIsLoading(true);
       try {
-        const searchResults = await alphaVantageService.searchSymbols(query);
-        setResults(searchResults.slice(0, 5)); // Limit to 5 results to save API calls
+        const searchResults = await yahooFinanceService.searchSymbols(query);
+        setResults(searchResults.slice(0, 8)); // Show more results since it's faster
       } catch (error) {
         console.error('Search failed:', error);
         toast.error('Search failed. Please try again.');
@@ -39,7 +39,7 @@ export const StockSearch: React.FC<StockSearchProps> = ({ onStockSelect, watchli
       }
     };
 
-    const debounceTimer = setTimeout(searchStocks, 1000); // Increased debounce for API limits
+    const debounceTimer = setTimeout(searchStocks, 300); // Faster debounce since Yahoo is quicker
     return () => clearTimeout(debounceTimer);
   }, [query]);
 
