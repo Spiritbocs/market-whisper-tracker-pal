@@ -1,24 +1,39 @@
 
 import { Stock, MarketNews } from '../types';
 
-// Use CORS proxy for Yahoo Finance to bypass CORS restrictions
-const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
-const YAHOO_FINANCE_BASE = 'https://query1.finance.yahoo.com/v8/finance/chart/';
-const YAHOO_NEWS_BASE = 'https://query2.finance.yahoo.com/v1/finance/search';
+// Multiple free APIs for redundancy
+const APIS = {
+  yahoo: {
+    base: 'https://query1.finance.yahoo.com/v8/finance/chart/',
+    search: 'https://query2.finance.yahoo.com/v1/finance/search',
+    proxy: 'https://api.allorigins.win/raw?url='
+  },
+  finnhub: {
+    base: 'https://finnhub.io/api/v1/quote',
+    token: 'demo' // Free tier
+  },
+  alphavantage: {
+    base: 'https://www.alphavantage.co/query',
+    key: 'demo'
+  },
+  iex: {
+    base: 'https://cloud.iexapis.com/stable/stock/',
+    token: 'pk_test_token' // Free sandbox
+  },
+  polygon: {
+    base: 'https://api.polygon.io/v2/aggs/ticker/',
+    key: 'demo'
+  }
+};
 
-// Backup Alpha Vantage API (free tier - 25 requests per day)
-const ALPHA_VANTAGE_KEY = 'demo'; // This is Alpha Vantage's demo key that works for AAPL
-const ALPHA_VANTAGE_BASE = 'https://www.alphavantage.co/query';
-
-// Enhanced caching
-const CACHE_DURATION = 2 * 60 * 1000; // 2 minutes cache for live data
-const REQUEST_DELAY = 200; // 200ms between requests
+const CACHE_DURATION = 1 * 60 * 1000; // 1 minute cache
+const REQUEST_DELAY = 100;
 
 class ApiCache {
-  private memoryCache = new Map<string, { data: any; timestamp: number }>();
+  private cache = new Map<string, { data: any; timestamp: number }>();
   
   get(key: string): any | null {
-    const cached = this.memoryCache.get(key);
+    const cached = this.cache.get(key);
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
       return cached.data;
     }
@@ -26,207 +41,145 @@ class ApiCache {
   }
   
   set(key: string, data: any): void {
-    this.memoryCache.set(key, { data, timestamp: Date.now() });
+    this.cache.set(key, { data, timestamp: Date.now() });
   }
 }
 
 const cache = new ApiCache();
-let requestQueue: Array<() => Promise<any>> = [];
-let isProcessingQueue = false;
 let lastRequestTime = 0;
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-const processRequestQueue = async () => {
-  if (isProcessingQueue || requestQueue.length === 0) return;
+// Try Yahoo Finance first (most reliable)
+const tryYahooFinance = async (symbol: string): Promise<Stock> => {
+  const url = `${APIS.yahoo.base}${symbol}?interval=1d&range=1d&includePrePost=false`;
+  const proxiedUrl = APIS.yahoo.proxy + encodeURIComponent(url);
   
-  isProcessingQueue = true;
+  const response = await fetch(proxiedUrl);
+  if (!response.ok) throw new Error(`Yahoo HTTP ${response.status}`);
   
-  while (requestQueue.length > 0) {
-    const request = requestQueue.shift();
-    if (request) {
-      const timeSinceLastRequest = Date.now() - lastRequestTime;
-      if (timeSinceLastRequest < REQUEST_DELAY) {
-        await delay(REQUEST_DELAY - timeSinceLastRequest);
-      }
-      
-      try {
-        await request();
-        lastRequestTime = Date.now();
-      } catch (error) {
-        console.error('Request failed:', error);
-      }
-    }
-  }
+  const data = await response.json();
+  if (data.chart?.error) throw new Error('Yahoo API error');
   
-  isProcessingQueue = false;
-};
-
-const makeYahooRequest = async (url: string): Promise<any> => {
-  const cacheKey = url;
-  const cached = cache.get(cacheKey);
-  
-  if (cached) {
-    console.log('Using cached data for:', url.split('/').pop());
-    return cached;
-  }
-
-  return new Promise((resolve, reject) => {
-    const requestHandler = async () => {
-      try {
-        console.log(`Making live Yahoo Finance request: ${url.split('/').pop()}`);
-        const proxiedUrl = CORS_PROXY + encodeURIComponent(url);
-        const response = await fetch(proxiedUrl);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        
-        if (data.chart?.error) {
-          throw new Error(data.chart.error.description || 'Yahoo Finance API error');
-        }
-
-        cache.set(cacheKey, data);
-        console.log(`Successfully fetched live data for: ${url.split('/').pop()}`);
-        resolve(data);
-      } catch (error) {
-        console.error('Yahoo Finance request failed:', error);
-        reject(error);
-      }
-    };
-
-    requestQueue.push(requestHandler);
-    processRequestQueue();
-  });
-};
-
-const makeAlphaVantageRequest = async (symbol: string): Promise<any> => {
-  const cacheKey = `av_${symbol}`;
-  const cached = cache.get(cacheKey);
-  
-  if (cached) {
-    return cached;
-  }
-
-  try {
-    console.log(`Making Alpha Vantage request for: ${symbol}`);
-    const url = `${ALPHA_VANTAGE_BASE}?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${ALPHA_VANTAGE_KEY}`;
-    const response = await fetch(url);
-    
-    if (!response.ok) {
-      throw new Error(`Alpha Vantage HTTP error! status: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    
-    if (data.Note || data['Error Message']) {
-      throw new Error(data.Note || data['Error Message']);
-    }
-
-    cache.set(cacheKey, data);
-    console.log(`Successfully fetched Alpha Vantage data for: ${symbol}`);
-    return data;
-  } catch (error) {
-    console.error('Alpha Vantage request failed:', error);
-    throw error;
-  }
-};
-
-const parseYahooStockData = (data: any, symbol: string): Stock => {
-  const result = data.chart?.result?.[0];
-  if (!result) {
-    throw new Error('Invalid Yahoo Finance response');
-  }
-
+  const result = data.chart.result[0];
   const meta = result.meta;
-  const currentPrice = meta.regularMarketPrice || 0;
-  const previousClose = meta.previousClose || currentPrice;
+  const quote = result.indicators?.quote?.[0];
+  
+  const currentPrice = meta.regularMarketPrice || quote?.close?.[0] || 0;
+  const previousClose = meta.previousClose || meta.chartPreviousClose || currentPrice;
   const change = currentPrice - previousClose;
   const changePercent = previousClose !== 0 ? (change / previousClose) * 100 : 0;
-
+  
   return {
     symbol: symbol.toUpperCase(),
     name: meta.longName || meta.shortName || symbol,
-    price: currentPrice,
-    change: change,
-    changePercent: changePercent,
+    price: Number(currentPrice.toFixed(2)),
+    change: Number(change.toFixed(2)),
+    changePercent: Number(changePercent.toFixed(2)),
     lastUpdated: new Date().toISOString(),
+    volume: quote?.volume?.[0] || meta.regularMarketVolume,
+    high: quote?.high?.[0] || meta.regularMarketDayHigh,
+    low: quote?.low?.[0] || meta.regularMarketDayLow
   };
 };
 
-const parseAlphaVantageData = (data: any, symbol: string): Stock => {
-  const quote = data['Global Quote'];
-  if (!quote) {
-    throw new Error('Invalid Alpha Vantage response');
-  }
-
-  const price = parseFloat(quote['05. price']);
-  const change = parseFloat(quote['09. change']);
-  const changePercent = parseFloat(quote['10. change percent'].replace('%', ''));
-
+// Backup API - Finnhub
+const tryFinnhub = async (symbol: string): Promise<Stock> => {
+  const url = `${APIS.finnhub.base}?symbol=${symbol}&token=${APIS.finnhub.token}`;
+  
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Finnhub HTTP ${response.status}`);
+  
+  const data = await response.json();
+  if (!data.c) throw new Error('Finnhub no data');
+  
+  const price = data.c; // current price
+  const change = data.d; // change
+  const changePercent = data.dp; // change percent
+  
   return {
     symbol: symbol.toUpperCase(),
     name: symbol.toUpperCase(),
-    price: price,
-    change: change,
-    changePercent: changePercent,
+    price: Number(price.toFixed(2)),
+    change: Number(change.toFixed(2)),
+    changePercent: Number(changePercent.toFixed(2)),
     lastUpdated: new Date().toISOString(),
+    volume: data.v,
+    high: data.h,
+    low: data.l
+  };
+};
+
+// Another backup - Alpha Vantage
+const tryAlphaVantage = async (symbol: string): Promise<Stock> => {
+  const url = `${APIS.alphavantage.base}?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${APIS.alphavantage.key}`;
+  
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Alpha Vantage HTTP ${response.status}`);
+  
+  const data = await response.json();
+  const quote = data['Global Quote'];
+  if (!quote) throw new Error('Alpha Vantage no data');
+  
+  const price = parseFloat(quote['05. price']);
+  const change = parseFloat(quote['09. change']);
+  const changePercent = parseFloat(quote['10. change percent'].replace('%', ''));
+  
+  return {
+    symbol: symbol.toUpperCase(),
+    name: symbol.toUpperCase(),
+    price: Number(price.toFixed(2)),
+    change: Number(change.toFixed(2)),
+    changePercent: Number(changePercent.toFixed(2)),
+    lastUpdated: new Date().toISOString()
   };
 };
 
 export const yahooFinanceService = {
   async getQuote(symbol: string): Promise<Stock> {
-    // Try Yahoo Finance first (through CORS proxy)
-    try {
-      const url = `${YAHOO_FINANCE_BASE}${symbol}?interval=1d&range=1d&includePrePost=false`;
-      const data = await makeYahooRequest(url);
-      return parseYahooStockData(data, symbol);
-    } catch (yahooError) {
-      console.log(`Yahoo Finance failed for ${symbol}, trying Alpha Vantage...`);
-      
-      // Fallback to Alpha Vantage
+    const cacheKey = `quote_${symbol}`;
+    const cached = cache.get(cacheKey);
+    if (cached) return cached;
+    
+    // Ensure rate limiting
+    const timeSinceLastRequest = Date.now() - lastRequestTime;
+    if (timeSinceLastRequest < REQUEST_DELAY) {
+      await delay(REQUEST_DELAY - timeSinceLastRequest);
+    }
+    lastRequestTime = Date.now();
+    
+    const apis = [tryYahooFinance, tryFinnhub, tryAlphaVantage];
+    
+    for (const apiCall of apis) {
       try {
-        const data = await makeAlphaVantageRequest(symbol);
-        return parseAlphaVantageData(data, symbol);
-      } catch (alphaError) {
-        console.error(`Both APIs failed for ${symbol}:`, { yahooError, alphaError });
-        throw new Error(`Failed to fetch live data for ${symbol}: Both Yahoo Finance and Alpha Vantage failed`);
+        console.log(`Fetching live data for ${symbol}...`);
+        const stock = await apiCall(symbol);
+        cache.set(cacheKey, stock);
+        console.log(`✅ Got live data for ${symbol}: $${stock.price} (${stock.changePercent}%)`);
+        return stock;
+      } catch (error) {
+        console.log(`❌ API failed for ${symbol}:`, error.message);
+        continue;
       }
     }
+    
+    throw new Error(`All APIs failed for ${symbol}`);
   },
 
   async getMultipleQuotes(symbols: string[]): Promise<Stock[]> {
-    console.log(`Fetching live data for ${symbols.length} symbols...`);
+    console.log(`🔴 LIVE: Fetching real data for ${symbols.length} symbols...`);
     const stocks: Stock[] = [];
     
-    // Process symbols in smaller batches to avoid overwhelming APIs
-    const batchSize = 3;
-    for (let i = 0; i < symbols.length; i += batchSize) {
-      const batch = symbols.slice(i, i + batchSize);
-      const promises = batch.map(async (symbol) => {
-        try {
-          return await this.getQuote(symbol);
-        } catch (error) {
-          console.error(`Failed to fetch data for ${symbol}:`, error);
-          // Return null for failed requests, filter out later
-          return null;
-        }
-      });
-      
-      const results = await Promise.all(promises);
-      // Filter out null results
-      const validStocks = results.filter((stock): stock is Stock => stock !== null);
-      stocks.push(...validStocks);
-      
-      // Add delay between batches
-      if (i + batchSize < symbols.length) {
-        await delay(1000);
+    for (const symbol of symbols) {
+      try {
+        const stock = await this.getQuote(symbol);
+        stocks.push(stock);
+      } catch (error) {
+        console.error(`Failed to get live data for ${symbol}:`, error);
       }
     }
     
-    console.log(`Successfully fetched live data for ${stocks.length}/${symbols.length} symbols`);
+    console.log(`🔴 LIVE: Successfully loaded ${stocks.length}/${symbols.length} stocks`);
     return stocks;
   },
 
@@ -234,22 +187,15 @@ export const yahooFinanceService = {
     if (query.length < 2) return [];
     
     try {
-      console.log(`Searching for symbols: ${query}`);
-      const url = `${YAHOO_NEWS_BASE}?q=${encodeURIComponent(query)}`;
-      const proxiedUrl = CORS_PROXY + encodeURIComponent(url);
+      const url = `${APIS.yahoo.search}?q=${encodeURIComponent(query)}`;
+      const proxiedUrl = APIS.yahoo.proxy + encodeURIComponent(url);
       const response = await fetch(proxiedUrl);
       
-      if (!response.ok) {
-        throw new Error(`Search HTTP error! status: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`Search HTTP ${response.status}`);
       
       const data = await response.json();
-      
-      if (!data.quotes) {
-        return [];
-      }
+      if (!data.quotes) return [];
 
-      console.log(`Found ${data.quotes.length} search results for: ${query}`);
       return data.quotes.slice(0, 10).map((quote: any) => ({
         symbol: quote.symbol,
         name: quote.longname || quote.shortname || quote.symbol,
@@ -264,47 +210,19 @@ export const yahooFinanceService = {
 
   async getTrendingStocks(): Promise<Stock[]> {
     const popularSymbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'META', 'NVDA', 'NFLX'];
-    console.log('Fetching live trending stocks...');
-    
-    const stocks = await this.getMultipleQuotes(popularSymbols);
-    console.log(`Loaded ${stocks.length} live trending stocks`);
-    return stocks;
+    return await this.getMultipleQuotes(popularSymbols);
   },
 
   async getMarketIndices(): Promise<Stock[]> {
     const indices = ['^GSPC', '^DJI', '^IXIC'];
-    console.log('Fetching live market indices...');
-    
-    const stocks = await this.getMultipleQuotes(indices);
-    console.log(`Loaded ${stocks.length} live market indices`);
-    return stocks;
+    return await this.getMultipleQuotes(indices);
   },
 
   async getMarketNews(): Promise<MarketNews[]> {
     return [];
   },
 
-  // Get cache status
-  getCacheStatus(): { symbol: string; lastUpdated: string; cached: boolean }[] {
-    const status: { symbol: string; lastUpdated: string; cached: boolean }[] = [];
-    const symbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'META', 'NVDA', 'NFLX'];
-    
-    symbols.forEach(symbol => {
-      const url = `${YAHOO_FINANCE_BASE}${symbol}?interval=1d&range=1d&includePrePost=false`;
-      const cached = cache.get(url);
-      
-      status.push({
-        symbol,
-        cached: !!cached,
-        lastUpdated: cached ? new Date().toLocaleString() : 'Never'
-      });
-    });
-    
-    return status;
-  },
-
-  // Check if using mock data (always false now)
   isUsingMockData(): boolean {
-    return false;
-  },
+    return false; // Always real data now
+  }
 };

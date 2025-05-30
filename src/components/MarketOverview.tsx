@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -5,56 +6,45 @@ import { StockCard } from './StockCard';
 import { yahooFinanceService } from '../services/yahooFinanceService';
 import { Stock, MarketNews } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { TrendingUp, Globe, Clock, ExternalLink, Plus, AlertCircle, CheckCircle, Info } from 'lucide-react';
+import { TrendingUp, Globe, Clock, Plus, AlertCircle, ArrowUp, ArrowDown, Activity, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const MarketOverview: React.FC = () => {
   const [trendingStocks, setTrendingStocks] = useState<Stock[]>([]);
   const [marketIndices, setMarketIndices] = useState<Stock[]>([]);
-  const [marketNews, setMarketNews] = useState<MarketNews[]>([]);
+  const [watchlistStocks, setWatchlistStocks] = useState<Stock[]>([]);
+  const [filteredStocks, setFilteredStocks] = useState<Stock[]>([]);
+  const [activeFilter, setActiveFilter] = useState('All');
   const [isLoading, setIsLoading] = useState(true);
-  const [loadingProgress, setLoadingProgress] = useState({ current: 0, total: 0, status: '' });
-  const [hasData, setHasData] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { addStockToWatchlist, watchlists, isAuthenticated } = useAuth();
+  const { addStockToWatchlist, watchlists, isAuthenticated, loadWatchlists } = useAuth();
 
   useEffect(() => {
     const loadMarketData = async () => {
       try {
         setError(null);
-        setLoadingProgress({ current: 0, total: 2, status: 'Connecting to live market data...' });
+        setIsLoading(true);
         
-        // Load trending stocks first
-        setLoadingProgress({ current: 0, total: 2, status: 'Fetching live stock prices...' });
+        console.log('🔴 LIVE: Loading real market data...');
+        
+        // Load trending stocks
         const trending = await yahooFinanceService.getTrendingStocks();
-        
         if (trending.length > 0) {
           setTrendingStocks(trending);
-          setHasData(true);
-          toast.success(`Loaded ${trending.length} live stocks with real-time prices`);
-        } else {
-          throw new Error('No live stock data available');
+          setFilteredStocks(trending);
+          toast.success(`🔴 LIVE: Loaded ${trending.length} real stocks`);
         }
-        
-        setLoadingProgress({ current: 1, total: 2, status: 'Loading market indices...' });
         
         // Load market indices
-        try {
-          const indices = await yahooFinanceService.getMarketIndices();
-          if (indices.length > 0) {
-            setMarketIndices(indices);
-            toast.success(`Loaded ${indices.length} live market indices`);
-          }
-        } catch (error) {
-          console.log('Market indices failed, continuing with stocks only');
+        const indices = await yahooFinanceService.getMarketIndices();
+        if (indices.length > 0) {
+          setMarketIndices(indices);
         }
         
-        setLoadingProgress({ current: 2, total: 2, status: 'Live data loaded!' });
-        
       } catch (error) {
-        console.error('Failed to load live market data:', error);
+        console.error('Failed to load real market data:', error);
         setError(error.message || 'Failed to load live market data');
-        toast.error('Failed to load live market data. Please check your internet connection.');
+        toast.error('Failed to load live market data');
       } finally {
         setIsLoading(false);
       }
@@ -63,59 +53,70 @@ export const MarketOverview: React.FC = () => {
     loadMarketData();
   }, []);
 
-  const handleAddToDefaultWatchlist = async (symbol: string) => {
-    const defaultWatchlist = watchlists.find(w => w.is_default);
-    if (defaultWatchlist) {
-      await addStockToWatchlist(defaultWatchlist.id, symbol);
-    }
-  };
+  // Load user's actual watchlist stocks
+  useEffect(() => {
+    const loadUserWatchlistStocks = async () => {
+      if (!isAuthenticated || watchlists.length === 0) {
+        setWatchlistStocks([]);
+        return;
+      }
 
-  const formatTimeAgo = (timeString: string) => {
-    const date = new Date(timeString);
-    const now = new Date();
-    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+      try {
+        const defaultWatchlist = watchlists.find(w => w.is_default) || watchlists[0];
+        if (defaultWatchlist?.watchlist_stocks && defaultWatchlist.watchlist_stocks.length > 0) {
+          const symbols = defaultWatchlist.watchlist_stocks.map(ws => ws.symbol);
+          console.log('🔴 LIVE: Loading user watchlist symbols:', symbols);
+          const stocks = await yahooFinanceService.getMultipleQuotes(symbols);
+          setWatchlistStocks(stocks);
+        }
+      } catch (error) {
+        console.error('Failed to load watchlist stocks:', error);
+      }
+    };
+
+    loadUserWatchlistStocks();
+  }, [watchlists, isAuthenticated]);
+
+  const handleFilterChange = (filter: string) => {
+    setActiveFilter(filter);
+    let filtered = [...trendingStocks];
     
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
-    return `${Math.floor(diffInMinutes / 1440)}d ago`;
+    switch (filter) {
+      case 'Active':
+        filtered = filtered.filter(stock => stock.volume && stock.volume > 1000000);
+        break;
+      case 'Gainers':
+        filtered = filtered.filter(stock => stock.changePercent > 0).sort((a, b) => b.changePercent - a.changePercent);
+        break;
+      case 'Losers':
+        filtered = filtered.filter(stock => stock.changePercent < 0).sort((a, b) => a.changePercent - b.changePercent);
+        break;
+      default:
+        break;
+    }
+    
+    setFilteredStocks(filtered);
   };
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center max-w-md">
+        <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Loading Live Market Data</h3>
-            <p className="text-muted-foreground">{loadingProgress.status}</p>
-            
-            <div className="w-full bg-muted rounded-full h-2">
-              <div 
-                className="bg-primary h-2 rounded-full transition-all duration-500" 
-                style={{ width: `${(loadingProgress.current / loadingProgress.total) * 100}%` }}
-              />
-            </div>
-            
-            <p className="text-sm text-muted-foreground">
-              Fetching real-time prices: {loadingProgress.current} / {loadingProgress.total}
-            </p>
-          </div>
+          <h3 className="text-lg font-semibold">🔴 Loading Live Market Data</h3>
+          <p className="text-muted-foreground">Fetching real-time prices...</p>
         </div>
       </div>
     );
   }
 
-  // Show error if no data loaded
-  if (error || (!isLoading && trendingStocks.length === 0)) {
+  if (error && trendingStocks.length === 0) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center max-w-md">
           <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">Unable to Load Live Market Data</h3>
-          <p className="text-muted-foreground mb-4">
-            {error || 'Failed to connect to live market data sources. Please check your internet connection and try again.'}
-          </p>
+          <p className="text-muted-foreground mb-4">{error}</p>
           <button 
             onClick={() => window.location.reload()} 
             className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
@@ -127,45 +128,18 @@ export const MarketOverview: React.FC = () => {
     );
   }
 
+  const topGainers = trendingStocks.filter(s => s.changePercent > 0).sort((a, b) => b.changePercent - a.changePercent).slice(0, 5);
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Live data indicator */}
-      {trendingStocks.length > 0 && (
-        <div className="bg-green-50 border-b border-green-200 px-4 py-2">
-          <div className="flex items-center justify-center space-x-2 text-green-800">
-            <CheckCircle className="w-4 h-4" />
-            <span className="text-sm">🔴 LIVE - Real-time market data - {trendingStocks.length} stocks loaded</span>
-          </div>
-        </div>
-      )}
-
-      {/* Top ticker strip */}
-      {trendingStocks.length > 0 && (
-        <div className="bg-card border-b px-4 py-2 overflow-x-auto">
-          <div className="flex items-center space-x-6 min-w-max">
-            <span className="text-sm font-medium text-green-600">
-              🔴 LIVE DATA
-            </span>
-            {trendingStocks.slice(0, 8).map((stock) => (
-              <div key={stock.symbol} className="flex items-center space-x-2 text-sm">
-                <span className="font-medium">{stock.symbol}</span>
-                <span className={stock.change >= 0 ? 'text-green-600' : 'text-red-600'}>
-                  {stock.change >= 0 ? '▲' : '▼'} {Math.abs(stock.changePercent).toFixed(2)}%
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       <div className="container mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Left sidebar - Watchlist */}
+          {/* Left sidebar - User's Actual Watchlist */}
           <div className="lg:col-span-1">
             <Card className="h-fit">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">My watchlist</CardTitle>
+                  <CardTitle className="text-lg">My Watchlist</CardTitle>
                   <button className="text-primary hover:text-primary/80">
                     <Plus className="w-4 h-4" />
                   </button>
@@ -178,51 +152,30 @@ export const MarketOverview: React.FC = () => {
                       Sign in to create and manage watchlists
                     </p>
                   </div>
-                ) : trendingStocks.length > 0 ? (
-                  <>
-                    <div className="space-y-2">
-                      {trendingStocks.slice(0, 5).map((stock) => (
-                        <div key={stock.symbol} className="flex items-center justify-between p-2 hover:bg-accent rounded text-sm">
-                          <div className="flex-1">
-                            <div className="font-medium">{stock.symbol}</div>
-                            <div className="text-xs text-muted-foreground truncate">
-                              {stock.name}
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="font-medium">${stock.price.toFixed(2)}</div>
-                            <div className={`text-xs ${stock.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                              {stock.change >= 0 ? '+' : ''}{stock.changePercent.toFixed(2)}%
-                            </div>
+                ) : watchlistStocks.length > 0 ? (
+                  <div className="space-y-2">
+                    {watchlistStocks.map((stock) => (
+                      <div key={stock.symbol} className="flex items-center justify-between p-2 hover:bg-accent rounded text-sm">
+                        <div className="flex-1">
+                          <div className="font-medium">{stock.symbol}</div>
+                          <div className="text-xs text-muted-foreground truncate">
+                            {stock.name}
                           </div>
                         </div>
-                      ))}
-                    </div>
-                    {trendingStocks.length > 5 && (
-                      <div className="pt-3 border-t">
-                        <h4 className="text-sm font-medium mb-2">More stocks</h4>
-                        <div className="space-y-2">
-                          {trendingStocks.slice(5, 8).map((stock) => (
-                            <div key={stock.symbol} className="flex items-center justify-between p-2 hover:bg-accent rounded text-sm">
-                              <div className="flex-1">
-                                <div className="font-medium">{stock.symbol}</div>
-                                <div className="text-xs text-muted-foreground">
-                                  {stock.change >= 0 ? 'Price up' : 'Price down'}
-                                </div>
-                              </div>
-                              <div className={`text-xs ${stock.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                {stock.changePercent.toFixed(2)}%
-                              </div>
-                            </div>
-                          ))}
+                        <div className="text-right">
+                          <div className="font-medium">${stock.price}</div>
+                          <div className={`text-xs flex items-center ${stock.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {stock.changePercent >= 0 ? <ArrowUp className="w-3 h-3 mr-1" /> : <ArrowDown className="w-3 h-3 mr-1" />}
+                            {Math.abs(stock.changePercent)}%
+                          </div>
                         </div>
                       </div>
-                    )}
-                  </>
+                    ))}
+                  </div>
                 ) : (
                   <div className="text-center py-8">
                     <p className="text-sm text-muted-foreground">
-                      No stock data available
+                      Your watchlist is empty. Add some stocks to get started.
                     </p>
                   </div>
                 )}
@@ -230,52 +183,75 @@ export const MarketOverview: React.FC = () => {
             </Card>
           </div>
 
-          {/* Center content - Main chart and table */}
+          {/* Center content - Chart and stock table */}
           <div className="lg:col-span-2">
             <div className="space-y-6">
-              {/* Watchlist header */}
+              {/* Header */}
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h1 className="text-2xl font-bold">
-                    🔴 Live Market Data
+                  <h1 className="text-2xl font-bold flex items-center">
+                    <Activity className="w-6 h-6 mr-2 text-green-500" />
+                    Live Market Data
                   </h1>
                   <div className="flex items-center space-x-2 text-sm text-green-600">
-                    <Clock className="w-4 h-4" />
-                    <span>Last updated: {new Date().toLocaleTimeString()}</span>
+                    <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                    <span>LIVE - {new Date().toLocaleTimeString()}</span>
                   </div>
-                </div>
-                <div className="text-sm text-green-600">
-                  {trendingStocks.length} Live Symbols - Real-time prices
                 </div>
               </div>
 
-              {/* Chart placeholder */}
+              {/* Chart placeholder with real market indices */}
               <Card className="h-80">
-                <CardContent className="p-6 h-full flex items-center justify-center">
-                  <div className="text-center">
-                    <TrendingUp className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-muted-foreground">Chart visualization coming soon</p>
-                  </div>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <BarChart3 className="w-5 h-5 mr-2" />
+                    Market Indices
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {marketIndices.length > 0 ? (
+                    marketIndices.map((index) => (
+                      <div key={index.symbol} className="flex items-center justify-between p-3 border rounded">
+                        <div>
+                          <div className="font-medium">{index.name}</div>
+                          <div className="text-sm text-muted-foreground">{index.symbol}</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-bold text-lg">{index.price.toLocaleString()}</div>
+                          <div className={`text-sm flex items-center justify-end ${index.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {index.changePercent >= 0 ? <ArrowUp className="w-4 h-4 mr-1" /> : <ArrowDown className="w-4 h-4 mr-1" />}
+                            {index.change >= 0 ? '+' : ''}{index.change} ({index.changePercent >= 0 ? '+' : ''}{index.changePercent}%)
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-12">
+                      <BarChart3 className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-muted-foreground">Loading market indices...</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
-              {/* Stock table */}
+              {/* Stock table with filters */}
               {trendingStocks.length > 0 && (
                 <Card>
                   <CardHeader className="pb-3">
                     <div className="flex items-center space-x-4">
-                      <button className="px-3 py-1 bg-primary text-primary-foreground rounded-full text-sm">
-                        All
-                      </button>
-                      <button className="px-3 py-1 text-sm hover:bg-accent rounded-full">
-                        Active
-                      </button>
-                      <button className="px-3 py-1 text-sm hover:bg-accent rounded-full">
-                        Gainers
-                      </button>
-                      <button className="px-3 py-1 text-sm hover:bg-accent rounded-full">
-                        Losers
-                      </button>
+                      {['All', 'Active', 'Gainers', 'Losers'].map((filter) => (
+                        <button
+                          key={filter}
+                          onClick={() => handleFilterChange(filter)}
+                          className={`px-3 py-1 text-sm rounded-full transition-colors ${
+                            activeFilter === filter
+                              ? 'bg-primary text-primary-foreground'
+                              : 'hover:bg-accent'
+                          }`}
+                        >
+                          {filter}
+                        </button>
+                      ))}
                     </div>
                   </CardHeader>
                   <CardContent className="p-0">
@@ -286,15 +262,14 @@ export const MarketOverview: React.FC = () => {
                             <th className="text-left p-3">Symbol</th>
                             <th className="text-right p-3">Last Price</th>
                             <th className="text-right p-3">Change</th>
-                            <th className="text-right p-3">% Chg</th>
+                            <th className="text-right p-3">% Change</th>
                             <th className="text-right p-3">Volume</th>
-                            <th className="text-right p-3">Day Range</th>
-                            <th className="text-right p-3">52Wk Range</th>
-                            <th className="text-right p-3">Market cap</th>
+                            <th className="text-right p-3">High</th>
+                            <th className="text-right p-3">Low</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {trendingStocks.map((stock) => (
+                          {filteredStocks.map((stock) => (
                             <tr key={stock.symbol} className="border-b hover:bg-accent/50">
                               <td className="p-3">
                                 <div className="flex items-center space-x-2">
@@ -310,25 +285,25 @@ export const MarketOverview: React.FC = () => {
                                 </div>
                               </td>
                               <td className="text-right p-3 font-medium">
-                                ${stock.price.toFixed(2)}
+                                ${stock.price}
                               </td>
                               <td className={`text-right p-3 ${stock.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                {stock.change >= 0 ? '+' : ''}{stock.change.toFixed(2)}
+                                {stock.change >= 0 ? '+' : ''}{stock.change}
                               </td>
-                              <td className={`text-right p-3 ${stock.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                {stock.change >= 0 ? '+' : ''}{stock.changePercent.toFixed(2)}%
-                              </td>
-                              <td className="text-right p-3 text-sm text-muted-foreground">
-                                {(Math.random() * 100 + 10).toFixed(1)}M
-                              </td>
-                              <td className="text-right p-3 text-sm text-muted-foreground">
-                                ${(stock.price * 0.95).toFixed(2)} - ${(stock.price * 1.05).toFixed(2)}
+                              <td className={`text-right p-3 font-medium ${stock.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                <div className="flex items-center justify-end">
+                                  {stock.changePercent >= 0 ? <ArrowUp className="w-3 h-3 mr-1" /> : <ArrowDown className="w-3 h-3 mr-1" />}
+                                  {stock.changePercent >= 0 ? '+' : ''}{stock.changePercent}%
+                                </div>
                               </td>
                               <td className="text-right p-3 text-sm text-muted-foreground">
-                                ${(stock.price * 0.7).toFixed(2)} - ${(stock.price * 1.3).toFixed(2)}
+                                {stock.volume ? `${(stock.volume / 1000000).toFixed(1)}M` : 'N/A'}
                               </td>
                               <td className="text-right p-3 text-sm text-muted-foreground">
-                                ${((Math.random() * 2 + 0.5) * 1000).toFixed(0)}B
+                                ${stock.high || 'N/A'}
+                              </td>
+                              <td className="text-right p-3 text-sm text-muted-foreground">
+                                ${stock.low || 'N/A'}
                               </td>
                             </tr>
                           ))}
@@ -341,39 +316,29 @@ export const MarketOverview: React.FC = () => {
             </div>
           </div>
 
-          {/* Right sidebar - Performance and news */}
+          {/* Right sidebar - Performance and Top Gainers */}
           <div className="lg:col-span-1 space-y-6">
-            {/* Performance metrics */}
-            {trendingStocks.length > 0 && (
+            {/* Real Performance metrics from market indices */}
+            {marketIndices.length > 0 && (
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">Performance</CardTitle>
+                  <CardTitle className="text-lg">Market Performance</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">1-Month Return</span>
-                      <span className="text-sm font-medium text-green-600">+11.39%</span>
+                  {marketIndices.map((index) => (
+                    <div key={index.symbol} className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">{index.name}</span>
+                      <span className={`text-sm font-medium ${index.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {index.changePercent >= 0 ? '+' : ''}{index.changePercent}%
+                      </span>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">VS S&P 500</span>
-                      <span className="text-sm font-medium text-green-600">+5.07%</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">VS DOW</span>
-                      <span className="text-sm font-medium text-green-600">+7.22%</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">VS NASDAQ</span>
-                      <span className="text-sm font-medium text-green-600">+1.57%</span>
-                    </div>
-                  </div>
+                  ))}
                 </CardContent>
               </Card>
             )}
 
-            {/* Top gainers */}
-            {trendingStocks.length > 0 && (
+            {/* Real Top gainers */}
+            {topGainers.length > 0 && (
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg flex items-center">
@@ -382,45 +347,18 @@ export const MarketOverview: React.FC = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {trendingStocks
-                    .filter(stock => stock.change > 0)
-                    .slice(0, 5)
-                    .map((stock) => (
-                      <div key={stock.symbol} className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="font-medium text-sm">{stock.symbol}</div>
-                          <div className="text-xs text-muted-foreground">Price up</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-medium text-sm">${stock.price.toFixed(2)}</div>
-                          <div className="text-xs text-green-600">
-                            +{stock.changePercent.toFixed(2)}%
-                          </div>
-                        </div>
+                  {topGainers.map((stock) => (
+                    <div key={stock.symbol} className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="font-medium text-sm">{stock.symbol}</div>
+                        <div className="text-xs text-muted-foreground">Live data</div>
                       </div>
-                    ))}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Market news */}
-            {marketNews.length > 0 && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg flex items-center">
-                    <Globe className="w-4 h-4 mr-2" />
-                    News
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {marketNews.slice(0, 5).map((article, index) => (
-                    <div key={index} className="space-y-2">
-                      <h4 className="text-sm font-medium leading-tight line-clamp-2">
-                        {article.title}
-                      </h4>
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span>{article.source}</span>
-                        <span>{formatTimeAgo(article.time_published)}</span>
+                      <div className="text-right">
+                        <div className="font-medium text-sm">${stock.price}</div>
+                        <div className="text-xs text-green-600 flex items-center">
+                          <ArrowUp className="w-3 h-3 mr-1" />
+                          +{stock.changePercent}%
+                        </div>
                       </div>
                     </div>
                   ))}
