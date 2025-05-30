@@ -4,7 +4,7 @@ const API_KEY = 'TZNLZB2LBZIG5OIM'; // Your Alpha Vantage API key
 const BASE_URL = 'https://www.alphavantage.co/query';
 
 // Check if API key is configured
-const isApiKeyConfigured = API_KEY !== 'YOUR_API_KEY_HERE' && API_KEY && API_KEY.length > 0;
+const isApiKeyConfigured = API_KEY && API_KEY.length > 0 && API_KEY !== 'YOUR_API_KEY_HERE';
 
 // Cache to store API responses and respect rate limits
 const cache = new Map<string, { data: any; timestamp: number }>();
