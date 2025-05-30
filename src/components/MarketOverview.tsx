@@ -349,10 +349,10 @@ export const MarketOverview: React.FC = () => {
   const displayWatchlistStocks = isAuthenticated ? watchlistStocks : guestWatchlistStocks;
 
   return (
-    <div className="space-y-6 bg-background min-h-screen">
+    <div className="w-full bg-background min-h-screen">
       {/* Market Stats Header */}
-      <div className="bg-muted/30 border-b">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+      <div className="bg-muted/30 border-b w-full">
+        <div className="w-full px-6 py-4">
           <div className="flex flex-wrap items-center gap-6 text-sm">
             <div className="flex items-center space-x-2">
               <span className="text-muted-foreground">Stocks:</span>
@@ -381,81 +381,9 @@ export const MarketOverview: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-6">
+      <div className="w-full px-6 py-6">
         {/* Top Statistics - Horizontal Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
-          {/* My Watchlist - Only show if authenticated */}
-          {isAuthenticated && (
-            <div className="bg-card border rounded-lg p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold flex items-center">
-                  <List className="w-5 h-5 mr-2 text-blue-500" />
-                  My Watchlist
-                </h3>
-                <Dialog open={showWatchlistModal} onOpenChange={setShowWatchlistModal}>
-                  <DialogTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>My Watchlist</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-3 max-h-96 overflow-y-auto">
-                      {displayWatchlistStocks.map((stock, index) => (
-                        <div key={stock.symbol} className="flex items-center justify-between p-3 border rounded">
-                          <div className="flex items-center space-x-3">
-                            <span className="text-sm text-muted-foreground w-6">{index + 1}</span>
-                            <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-sm font-medium">
-                              {stock.symbol.slice(0, 2)}
-                            </div>
-                            <div>
-                              <div className="font-medium">{stock.symbol}</div>
-                              <div className="text-sm text-muted-foreground">${stock.price.toFixed(2)}</div>
-                            </div>
-                          </div>
-                          <div className={`text-sm font-medium ${stock.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {stock.changePercent >= 0 ? '+' : ''}{stock.changePercent.toFixed(2)}%
-                          </div>
-                        </div>
-                      ))}
-                      {displayWatchlistStocks.length === 0 && (
-                        <div className="text-center text-muted-foreground py-8">
-                          No stocks in watchlist
-                        </div>
-                      )}
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </div>
-              <div className="space-y-3">
-                {displayWatchlistStocks.slice(0, 3).map((stock, index) => (
-                  <div key={stock.symbol} className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <span className="text-sm text-muted-foreground w-4">{index + 1}</span>
-                      <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center text-xs font-medium">
-                        {stock.symbol.slice(0, 1)}
-                      </div>
-                      <div>
-                        <div className="font-medium text-sm">{stock.symbol}</div>
-                        <div className="text-xs text-muted-foreground">${stock.price.toFixed(2)}</div>
-                      </div>
-                    </div>
-                    <div className={`text-sm font-medium ${stock.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {stock.changePercent >= 0 ? '+' : ''}{stock.changePercent.toFixed(2)}%
-                    </div>
-                  </div>
-                ))}
-                {displayWatchlistStocks.length === 0 && (
-                  <div className="text-center text-muted-foreground text-sm py-4">
-                    No stocks in watchlist
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
           {/* Trending Stocks */}
           <div className="bg-card border rounded-lg p-6">
             <div className="flex items-center justify-between mb-4">
@@ -691,12 +619,12 @@ export const MarketOverview: React.FC = () => {
             </div>
           </div>
 
-          {/* Stock table */}
+          {/* Stock table - full width */}
           {trendingStocks.length > 0 && (
-            <Card>
+            <Card className="w-full">
               <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
+                <div className="w-full overflow-x-auto">
+                  <table className="w-full min-w-full">
                     <thead className="bg-muted/50 border-b">
                       <tr className="text-sm text-muted-foreground">
                         <th className="text-left p-4 font-medium">#</th>
@@ -721,7 +649,7 @@ export const MarketOverview: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredStocks.map((stock, index) => {
+                      {filteredStocks.slice(0, rowsToShow).map((stock, index) => {
                         const performance = getPerformanceIndicator(stock.changePercent);
                         const PerformanceIcon = performance.icon;
                         

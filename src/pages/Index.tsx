@@ -17,33 +17,35 @@ const AppContent: React.FC = () => {
     <div className="min-h-screen bg-background">
       <Header />
       
-      <main className="w-full max-w-none px-6 py-8">
+      <main className="w-full">
         {isAuthenticated ? (
           <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mb-8 max-w-md">
-              <TabsTrigger value="overview" className="flex items-center space-x-2">
-                <TrendingUp className="w-4 h-4" />
-                <span>Market Overview</span>
-              </TabsTrigger>
-              <TabsTrigger value="watchlists" className="flex items-center space-x-2">
-                <List className="w-4 h-4" />
-                <span>My Watchlists</span>
-              </TabsTrigger>
-              <TabsTrigger value="indications" className="flex items-center space-x-2">
-                <Target className="w-4 h-4" />
-                <span>Indications</span>
-              </TabsTrigger>
-            </TabsList>
+            <div className="px-6 pt-8">
+              <TabsList className="grid w-full grid-cols-3 mb-8 max-w-md">
+                <TabsTrigger value="overview" className="flex items-center space-x-2">
+                  <TrendingUp className="w-4 h-4" />
+                  <span>Market Overview</span>
+                </TabsTrigger>
+                <TabsTrigger value="watchlists" className="flex items-center space-x-2">
+                  <List className="w-4 h-4" />
+                  <span>My Watchlists</span>
+                </TabsTrigger>
+                <TabsTrigger value="indications" className="flex items-center space-x-2">
+                  <Target className="w-4 h-4" />
+                  <span>Indications</span>
+                </TabsTrigger>
+              </TabsList>
+            </div>
             
-            <TabsContent value="overview">
+            <TabsContent value="overview" className="mt-0">
               <MarketOverview />
             </TabsContent>
             
-            <TabsContent value="watchlists">
+            <TabsContent value="watchlists" className="mt-0 px-6">
               <WatchlistManager />
             </TabsContent>
             
-            <TabsContent value="indications">
+            <TabsContent value="indications" className="mt-0 px-6">
               <TradingIndications />
             </TabsContent>
           </Tabs>
