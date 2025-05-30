@@ -1,11 +1,10 @@
-
 import { Stock, StockQuote, MarketNews } from '../types';
 
-const API_KEY = 'YOUR_API_KEY_HERE'; // Replace with your Alpha Vantage API key
+const API_KEY = 'TZNLZB2LBZIG5OIM'; // Your Alpha Vantage API key
 const BASE_URL = 'https://www.alphavantage.co/query';
 
 // Check if API key is configured
-const isApiKeyConfigured = API_KEY !== 'YOUR_API_KEY_HERE' && API_KEY.length > 0;
+const isApiKeyConfigured = API_KEY !== 'YOUR_API_KEY_HERE' && API_KEY && API_KEY.length > 0;
 
 // Cache to store API responses and respect rate limits
 const cache = new Map<string, { data: any; timestamp: number }>();
@@ -134,8 +133,18 @@ const parseStockData = (data: StockQuote, symbol: string): Stock => {
 
 export const alphaVantageService = {
   async getQuote(symbol: string): Promise<Stock> {
-    if (!isApiKeyConfigured) {
-      // Return mock data for the requested symbol
+    try {
+      const url = `${BASE_URL}?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${API_KEY}`;
+      const data = await makeRequest(url);
+      
+      if (!data['Global Quote']) {
+        throw new Error('Invalid symbol or API response');
+      }
+
+      return parseStockData(data['Global Quote'], symbol);
+    } catch (error) {
+      console.error(`Failed to fetch ${symbol}:`, error);
+      // Fallback to mock data
       const mockStock = getMockStocks().find(s => s.symbol === symbol);
       if (mockStock) {
         return mockStock;
@@ -150,22 +159,9 @@ export const alphaVantageService = {
         lastUpdated: new Date().toISOString(),
       };
     }
-
-    const url = `${BASE_URL}?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${API_KEY}`;
-    const data = await makeRequest(url);
-    
-    if (!data['Global Quote']) {
-      throw new Error('Invalid symbol or API response');
-    }
-
-    return parseStockData(data['Global Quote'], symbol);
   },
 
   async getMultipleQuotes(symbols: string[]): Promise<Stock[]> {
-    if (!isApiKeyConfigured) {
-      return getMockStocks().filter(stock => symbols.includes(stock.symbol));
-    }
-
     const stocks: Stock[] = [];
     
     // Process symbols in batches to respect rate limits
@@ -191,7 +187,22 @@ export const alphaVantageService = {
   },
 
   async searchSymbols(query: string): Promise<any[]> {
-    if (!isApiKeyConfigured) {
+    try {
+      const url = `${BASE_URL}?function=SYMBOL_SEARCH&keywords=${query}&apikey=${API_KEY}`;
+      const data = await makeRequest(url);
+      
+      if (!data['bestMatches']) {
+        return [];
+      }
+
+      return data['bestMatches'].map((match: any) => ({
+        symbol: match['1. symbol'],
+        name: match['2. name'],
+        type: match['3. type'],
+        region: match['4. region'],
+      }));
+    } catch (error) {
+      console.error('Failed to search symbols:', error);
       // Return mock search results
       const mockResults = getMockStocks()
         .filter(stock => 
@@ -207,27 +218,9 @@ export const alphaVantageService = {
       
       return mockResults;
     }
-
-    const url = `${BASE_URL}?function=SYMBOL_SEARCH&keywords=${query}&apikey=${API_KEY}`;
-    const data = await makeRequest(url);
-    
-    if (!data['bestMatches']) {
-      return [];
-    }
-
-    return data['bestMatches'].map((match: any) => ({
-      symbol: match['1. symbol'],
-      name: match['2. name'],
-      type: match['3. type'],
-      region: match['4. region'],
-    }));
   },
 
   async getTrendingStocks(): Promise<Stock[]> {
-    if (!isApiKeyConfigured) {
-      return getMockStocks();
-    }
-
     // Popular stocks to display (you can customize this list)
     const popularSymbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'META', 'NVDA', 'NFLX'];
     
@@ -241,10 +234,6 @@ export const alphaVantageService = {
   },
 
   async getMarketIndices(): Promise<Stock[]> {
-    if (!isApiKeyConfigured) {
-      return getMockIndices();
-    }
-
     // Major market indices
     const indices = ['^GSPC', '^DJI', '^IXIC']; // S&P 500, Dow Jones, NASDAQ
     
@@ -258,13 +247,8 @@ export const alphaVantageService = {
   },
 
   async getMarketNews(): Promise<MarketNews[]> {
-    if (!isApiKeyConfigured) {
-      return getMockNews();
-    }
-
-    const url = `${BASE_URL}?function=NEWS_SENTIMENT&apikey=${API_KEY}`;
-    
     try {
+      const url = `${BASE_URL}?function=NEWS_SENTIMENT&apikey=${API_KEY}`;
       const data = await makeRequest(url);
       
       if (!data.feed) {
