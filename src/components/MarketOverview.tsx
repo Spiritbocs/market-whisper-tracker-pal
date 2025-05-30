@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -31,6 +30,18 @@ const volumeData = [
   { time: '13:00', value: 2.1 },
   { time: '14:00', value: 2.1 },
 ];
+
+// Generate more realistic chart data for each stock
+const generateStockChart = (changePercent: number) => {
+  const baseValue = 100;
+  const trend = changePercent > 0 ? 1 : -1;
+  const volatility = Math.abs(changePercent) / 100;
+  
+  return Array.from({ length: 7 }, (_, i) => ({
+    time: i,
+    value: baseValue + (trend * i * 2) + (Math.random() - 0.5) * volatility * 10
+  }));
+};
 
 const getRecommendation = (stock: Stock): { action: string; reason: string; color: string; icon: any } => {
   const { changePercent, price } = stock;
@@ -244,10 +255,10 @@ export const MarketOverview: React.FC = () => {
   const displayWatchlistStocks = isAuthenticated ? watchlistStocks : guestWatchlistStocks;
 
   return (
-    <div className="space-y-6 bg-background">
+    <div className="space-y-6 bg-background min-h-screen">
       {/* Market Stats Header - Similar to CoinMarketCap */}
       <div className="bg-muted/30 border-b">
-        <div className="w-full px-4 py-4">
+        <div className="container mx-auto px-6 py-4">
           <div className="flex flex-wrap items-center gap-6 text-sm">
             <div className="flex items-center space-x-2">
               <span className="text-muted-foreground">Stocks:</span>
@@ -276,158 +287,139 @@ export const MarketOverview: React.FC = () => {
         </div>
       </div>
 
-      <div className="w-full px-4 py-6">
-        {/* Compact trending section with improved layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-8">
-          {/* Trending Stocks card - More compact */}
-          <Card className="h-[200px]">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center">
-                <TrendingUp className="w-4 h-4 mr-2" />
+      <div className="container mx-auto px-6 py-6">
+        {/* Top Statistics - Horizontal Layout */}
+        <div className="grid grid-cols-4 gap-6 mb-8">
+          {/* Trending Stocks */}
+          <div className="bg-card border rounded-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold flex items-center">
+                <TrendingUp className="w-5 h-5 mr-2 text-blue-500" />
                 Trending Stocks
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 overflow-y-auto max-h-[140px]">
-              {trendingStocks.slice(0, 5).map((stock, index) => (
-                <div key={stock.symbol} className="flex items-center justify-between py-1">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs text-muted-foreground w-3">{index + 1}</span>
-                    <div className="w-5 h-5 bg-primary/10 rounded-full flex items-center justify-center text-xs font-medium">
+              </h3>
+            </div>
+            <div className="space-y-3">
+              {trendingStocks.slice(0, 3).map((stock, index) => (
+                <div key={stock.symbol} className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <span className="text-sm text-muted-foreground w-4">{index + 1}</span>
+                    <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center text-xs font-medium">
                       {stock.symbol.slice(0, 1)}
                     </div>
-                    <span className="font-medium text-xs">{stock.symbol}</span>
-                  </div>
-                  <div className="text-right flex items-center space-x-2">
-                    <div className="text-right">
-                      <div className="font-medium text-xs">${stock.price.toFixed(2)}</div>
-                      <div className={`text-xs ${stock.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {stock.changePercent >= 0 ? '↗' : '↘'} {Math.abs(stock.changePercent).toFixed(2)}%
-                      </div>
+                    <div>
+                      <div className="font-medium text-sm">{stock.symbol}</div>
+                      <div className="text-xs text-muted-foreground">${stock.price.toFixed(2)}</div>
                     </div>
-                    <ChartContainer config={{ value: { label: 'Price', color: stock.changePercent >= 0 ? '#22c55e' : '#ef4444' } }} className="w-12 h-6">
-                      <LineChart data={marketCapData.slice(-4)}>
-                        <Line 
-                          type="monotone" 
-                          dataKey="value" 
-                          stroke={stock.changePercent >= 0 ? '#22c55e' : '#ef4444'} 
-                          strokeWidth={1}
-                          dot={false}
-                        />
-                      </LineChart>
-                    </ChartContainer>
+                  </div>
+                  <div className={`text-sm font-medium ${stock.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {stock.changePercent >= 0 ? '+' : ''}{stock.changePercent.toFixed(2)}%
                   </div>
                 </div>
               ))}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          {/* Market Cap card with chart */}
-          <Card className="h-[200px]">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Market Cap</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="text-2xl font-bold">$45.33T</div>
-                <div className="text-red-600 text-sm flex items-center">
-                  <TrendingDown className="w-3 h-3 mr-1" />
-                  3.14% (24h)
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Dominance: BTC: 61% ETH: 9.5%
-                </div>
-                <ChartContainer config={{ value: { label: 'Market Cap', color: '#ef4444' } }} className="h-16 mt-2">
-                  <AreaChart data={marketCapData}>
-                    <Area 
-                      type="monotone" 
-                      dataKey="value" 
-                      stroke="#ef4444" 
-                      fill="#ef4444" 
-                      fillOpacity={0.2}
-                      strokeWidth={1}
-                    />
-                  </AreaChart>
-                </ChartContainer>
-                <div className="text-xs text-muted-foreground">
-                  Market cap changes over time
+          {/* Market Cap */}
+          <div className="bg-card border rounded-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Market Cap</h3>
+            </div>
+            <div className="space-y-2">
+              <div className="text-3xl font-bold">$45.33T</div>
+              <div className="text-red-600 text-sm flex items-center">
+                <TrendingDown className="w-4 h-4 mr-1" />
+                3.14% (24h)
+              </div>
+              <div className="text-xs text-muted-foreground mb-3">
+                Dominance: AAPL: 7.2% MSFT: 6.8%
+              </div>
+              <ChartContainer config={{ value: { label: 'Market Cap', color: '#ef4444' } }} className="h-16">
+                <AreaChart data={marketCapData}>
+                  <Area 
+                    type="monotone" 
+                    dataKey="value" 
+                    stroke="#ef4444" 
+                    fill="#ef4444" 
+                    fillOpacity={0.2}
+                    strokeWidth={2}
+                  />
+                </AreaChart>
+              </ChartContainer>
+              <div className="text-xs text-muted-foreground mt-2">
+                Market cap changes over time
+              </div>
+            </div>
+          </div>
+
+          {/* 24h Volume */}
+          <div className="bg-card border rounded-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">24h Volume</h3>
+            </div>
+            <div className="space-y-2">
+              <div className="text-3xl font-bold">$147.89B</div>
+              <div className="text-green-600 text-sm flex items-center">
+                <TrendingUp className="w-4 h-4 mr-1" />
+                14.10% (24h)
+              </div>
+              <div className="text-xs text-muted-foreground mb-3">
+                Total trading volume across all exchanges
+              </div>
+              <ChartContainer config={{ value: { label: 'Volume', color: '#22c55e' } }} className="h-16">
+                <AreaChart data={volumeData}>
+                  <Area 
+                    type="monotone" 
+                    dataKey="value" 
+                    stroke="#22c55e" 
+                    fill="#22c55e" 
+                    fillOpacity={0.2}
+                    strokeWidth={2}
+                  />
+                </AreaChart>
+              </ChartContainer>
+              <div className="text-xs text-muted-foreground mt-2">
+                Trading activity increasing
+              </div>
+            </div>
+          </div>
+
+          {/* Fear & Greed */}
+          <div className="bg-card border rounded-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Fear & Greed</h3>
+            </div>
+            <div className="text-center space-y-3">
+              <div className="text-3xl font-bold">61</div>
+              <div className="text-sm text-orange-600 font-medium">Greed</div>
+              <div className="relative w-20 h-20 mx-auto">
+                <svg className="w-20 h-20 transform -rotate-90" viewBox="0 0 36 36">
+                  <path
+                    d="M18 2.0845
+                      a 15.9155 15.9155 0 0 1 0 31.831
+                      a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke="#e5e7eb"
+                    strokeWidth="2"
+                  />
+                  <path
+                    d="M18 2.0845
+                      a 15.9155 15.9155 0 0 1 0 31.831
+                      a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke="#f97316"
+                    strokeWidth="2"
+                    strokeDasharray="61, 100"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-lg font-bold">61</span>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Volume card with chart */}
-          <Card className="h-[200px]">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">24h Volume</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="text-2xl font-bold">$147.89B</div>
-                <div className="text-green-600 text-sm flex items-center">
-                  <TrendingUp className="w-3 h-3 mr-1" />
-                  14.10% (24h)
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Total trading volume across all exchanges
-                </div>
-                <ChartContainer config={{ value: { label: 'Volume', color: '#22c55e' } }} className="h-16 mt-2">
-                  <AreaChart data={volumeData}>
-                    <Area 
-                      type="monotone" 
-                      dataKey="value" 
-                      stroke="#22c55e" 
-                      fill="#22c55e" 
-                      fillOpacity={0.2}
-                      strokeWidth={1}
-                    />
-                  </AreaChart>
-                </ChartContainer>
-                <div className="text-xs text-muted-foreground">
-                  Trading activity increasing
-                </div>
+              <div className="text-xs text-muted-foreground">
+                Based on volatility, momentum, volume, and social sentiment
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Fear & Greed card */}
-          <Card className="h-[200px]">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Fear & Greed</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center space-y-2">
-                <div className="text-2xl font-bold">61</div>
-                <div className="text-sm text-orange-600 font-medium">Greed</div>
-                <div className="relative w-16 h-16 mx-auto">
-                  <svg className="w-16 h-16 transform -rotate-90" viewBox="0 0 36 36">
-                    <path
-                      d="M18 2.0845
-                        a 15.9155 15.9155 0 0 1 0 31.831
-                        a 15.9155 15.9155 0 0 1 0 -31.831"
-                      fill="none"
-                      stroke="#e5e7eb"
-                      strokeWidth="2"
-                    />
-                    <path
-                      d="M18 2.0845
-                        a 15.9155 15.9155 0 0 1 0 31.831
-                        a 15.9155 15.9155 0 0 1 0 -31.831"
-                      fill="none"
-                      stroke="#f97316"
-                      strokeWidth="2"
-                      strokeDasharray="61, 100"
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-sm font-medium">61</span>
-                  </div>
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Based on volatility, momentum, volume, and social sentiment
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
 
         {/* Main content area */}
@@ -515,69 +507,84 @@ export const MarketOverview: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredStocks.map((stock, index) => (
-                        <tr key={stock.symbol} className="border-b hover:bg-muted/30 transition-colors">
-                          <td className="p-4">
-                            <div className="flex items-center space-x-2">
-                              <Star className="w-4 h-4 text-muted-foreground hover:text-yellow-500 cursor-pointer" />
-                              <span className="font-medium">{index + 1}</span>
-                            </div>
-                          </td>
-                          <td className="p-4">
-                            <div className="flex items-center space-x-3">
-                              <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-sm font-medium">
-                                {stock.symbol.slice(0, 2)}
+                      {filteredStocks.map((stock, index) => {
+                        const chartData = generateStockChart(stock.changePercent);
+                        const isPositive = stock.changePercent >= 0;
+                        
+                        return (
+                          <tr key={stock.symbol} className="border-b hover:bg-muted/30 transition-colors">
+                            <td className="p-4">
+                              <div className="flex items-center space-x-2">
+                                <Star className="w-4 h-4 text-muted-foreground hover:text-yellow-500 cursor-pointer" />
+                                <span className="font-medium">{index + 1}</span>
                               </div>
-                              <div>
-                                <div className="font-semibold">{stock.symbol}</div>
-                                <div className="text-sm text-muted-foreground truncate max-w-32">
-                                  {stock.name}
+                            </td>
+                            <td className="p-4">
+                              <div className="flex items-center space-x-3">
+                                <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-sm font-medium">
+                                  {stock.symbol.slice(0, 2)}
+                                </div>
+                                <div>
+                                  <div className="font-semibold">{stock.symbol}</div>
+                                  <div className="text-sm text-muted-foreground truncate max-w-32">
+                                    {stock.name}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          </td>
-                          <td className="text-right p-4">
-                            <div className="font-semibold">${stock.price.toFixed(2)}</div>
-                          </td>
-                          <td className={`text-right p-4 ${stock.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            <div className="flex items-center justify-end">
-                              {stock.changePercent >= 0 ? '↗' : '↘'}
-                              <span className="ml-1">{Math.abs(stock.changePercent).toFixed(2)}%</span>
-                            </div>
-                          </td>
-                          <td className={`text-right p-4 ${stock.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            <div className="flex items-center justify-end">
-                              {stock.changePercent >= 0 ? '↗' : '↘'}
-                              <span className="ml-1">{Math.abs(stock.changePercent).toFixed(2)}%</span>
-                            </div>
-                          </td>
-                          <td className={`text-right p-4 ${stock.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            <div className="flex items-center justify-end">
-                              {stock.changePercent >= 0 ? '↗' : '↘'}
-                              <span className="ml-1">{Math.abs(stock.changePercent).toFixed(2)}%</span>
-                            </div>
-                          </td>
-                          <td className="text-right p-4 text-muted-foreground">
-                            {stock.marketCap ? `$${(stock.marketCap / 1000000000).toFixed(1)}B` : 'N/A'}
-                          </td>
-                          <td className="text-right p-4 text-muted-foreground">
-                            {stock.volume ? `$${(stock.volume / 1000000).toFixed(1)}M` : 'N/A'}
-                          </td>
-                          <td className="text-right p-4">
-                            <ChartContainer config={{ value: { label: 'Price', color: stock.changePercent >= 0 ? '#22c55e' : '#ef4444' } }} className="w-20 h-8">
-                              <LineChart data={marketCapData}>
-                                <Line 
-                                  type="monotone" 
-                                  dataKey="value" 
-                                  stroke={stock.changePercent >= 0 ? '#22c55e' : '#ef4444'} 
-                                  strokeWidth={1}
-                                  dot={false}
-                                />
-                              </LineChart>
-                            </ChartContainer>
-                          </td>
-                        </tr>
-                      ))}
+                            </td>
+                            <td className="text-right p-4">
+                              <div className="font-semibold">${stock.price.toFixed(2)}</div>
+                            </td>
+                            <td className={`text-right p-4 ${stock.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              <div className="flex items-center justify-end">
+                                {stock.changePercent >= 0 ? '↗' : '↘'}
+                                <span className="ml-1">{Math.abs(stock.changePercent).toFixed(2)}%</span>
+                              </div>
+                            </td>
+                            <td className={`text-right p-4 ${stock.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              <div className="flex items-center justify-end">
+                                {stock.changePercent >= 0 ? '↗' : '↘'}
+                                <span className="ml-1">{Math.abs(stock.changePercent).toFixed(2)}%</span>
+                              </div>
+                            </td>
+                            <td className={`text-right p-4 ${stock.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              <div className="flex items-center justify-end">
+                                {stock.changePercent >= 0 ? '↗' : '↘'}
+                                <span className="ml-1">{Math.abs(stock.changePercent).toFixed(2)}%</span>
+                              </div>
+                            </td>
+                            <td className="text-right p-4 text-muted-foreground">
+                              {stock.marketCap ? `$${(stock.marketCap / 1000000000).toFixed(1)}B` : 'N/A'}
+                            </td>
+                            <td className="text-right p-4 text-muted-foreground">
+                              {stock.volume ? `$${(stock.volume / 1000000).toFixed(1)}M` : 'N/A'}
+                            </td>
+                            <td className="text-right p-4">
+                              <ChartContainer 
+                                config={{ 
+                                  value: { 
+                                    label: 'Price', 
+                                    color: isPositive ? '#22c55e' : '#ef4444' 
+                                  } 
+                                }} 
+                                className="w-24 h-12"
+                              >
+                                <LineChart data={chartData}>
+                                  <Line 
+                                    type="monotone" 
+                                    dataKey="value" 
+                                    stroke={isPositive ? '#22c55e' : '#ef4444'} 
+                                    strokeWidth={2}
+                                    dot={false}
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                </LineChart>
+                              </ChartContainer>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
