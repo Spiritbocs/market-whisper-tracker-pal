@@ -261,7 +261,7 @@ export const MarketOverview: React.FC = () => {
 
   const displayWatchlistStocks = isAuthenticated ? watchlistStocks : guestWatchlistStocks;
 
-  // Show detailed view when compare button is clicked
+  // Show detailed view only when explicitly triggered by Compare button
   if (showDetailedView && selectedStocks.length > 0) {
     return (
       <div className="w-full bg-background min-h-screen p-6">
