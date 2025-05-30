@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Settings, Download } from 'lucide-react';
+import { Settings, Download, BarChart3 } from 'lucide-react';
 
 interface MarketFiltersProps {
   activeFilter: string;
@@ -18,6 +18,8 @@ interface MarketFiltersProps {
   rowsToShow: number;
   setRowsToShow: (rows: number) => void;
   onExportCSV: () => void;
+  selectedStocks: any[];
+  onCompareSelected: () => void;
 }
 
 const availableColumns = [
@@ -44,6 +46,8 @@ export const MarketFilters: React.FC<MarketFiltersProps> = ({
   rowsToShow,
   setRowsToShow,
   onExportCSV,
+  selectedStocks,
+  onCompareSelected,
 }) => {
   const handleRowsChange = (value: string) => {
     const rows = Number(value);
@@ -51,16 +55,40 @@ export const MarketFilters: React.FC<MarketFiltersProps> = ({
     setRowsToShow(rows);
   };
 
+  const getCompareButtonText = () => {
+    if (selectedStocks.length === 0) return 'Compare';
+    if (selectedStocks.length === 1) return 'Select 1 more to compare';
+    return `Compare Selected (${selectedStocks.length})`;
+  };
+
   return (
     <>
-      {/* Header with filters and customization */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Today's Stock Prices by Market Cap</h1>
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2 text-sm text-green-600">
-            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-            <span>LIVE - {new Date().toLocaleTimeString()}</span>
+      {/* Sticky header with live indicator and compare button */}
+      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b pb-4 mb-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">Today's Stock Prices by Market Cap</h1>
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 text-sm text-green-600">
+              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+              <span>LIVE - {new Date().toLocaleTimeString()}</span>
+            </div>
+            <Button 
+              variant={selectedStocks.length >= 2 ? "default" : "outline"} 
+              size="sm"
+              onClick={onCompareSelected}
+              disabled={selectedStocks.length < 2}
+              className={selectedStocks.length === 1 ? "animate-pulse" : ""}
+            >
+              <BarChart3 className="w-4 h-4 mr-2" />
+              {getCompareButtonText()}
+            </Button>
           </div>
+        </div>
+      </div>
+
+      {/* Controls section */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-4">
           <Dialog open={showCustomizeModal} onOpenChange={setShowCustomizeModal}>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm">
@@ -113,6 +141,22 @@ export const MarketFilters: React.FC<MarketFiltersProps> = ({
               </div>
             </DialogContent>
           </Dialog>
+          
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-muted-foreground">Sort by:</span>
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="marketCap">Market Cap</SelectItem>
+                <SelectItem value="price">Price</SelectItem>
+                <SelectItem value="change">% Change</SelectItem>
+                <SelectItem value="volume">Volume</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
           <Button variant="outline" size="sm" onClick={onExportCSV}>
             <Download className="w-4 h-4 mr-2" />
             Export
@@ -120,38 +164,21 @@ export const MarketFilters: React.FC<MarketFiltersProps> = ({
         </div>
       </div>
 
-      {/* Filter tabs and sorting options */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-1">
-          {['All', 'Active', 'Gainers', 'Losers'].map((filter) => (
-            <button
-              key={filter}
-              onClick={() => onFilterChange(filter)}
-              className={`px-4 py-2 text-sm rounded-lg transition-colors ${
-                activeFilter === filter
-                  ? 'bg-primary text-primary-foreground'
-                  : 'hover:bg-muted text-muted-foreground'
-              }`}
-            >
-              {filter}
-            </button>
-          ))}
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          <span className="text-sm text-muted-foreground">Sort by:</span>
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="marketCap">Market Cap</SelectItem>
-              <SelectItem value="price">Price</SelectItem>
-              <SelectItem value="change">% Change</SelectItem>
-              <SelectItem value="volume">Volume</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+      {/* Filter tabs */}
+      <div className="flex items-center space-x-1">
+        {['All', 'Active', 'Gainers', 'Losers'].map((filter) => (
+          <button
+            key={filter}
+            onClick={() => onFilterChange(filter)}
+            className={`px-4 py-2 text-sm rounded-lg transition-colors ${
+              activeFilter === filter
+                ? 'bg-primary text-primary-foreground'
+                : 'hover:bg-muted text-muted-foreground'
+            }`}
+          >
+            {filter}
+          </button>
+        ))}
       </div>
     </>
   );

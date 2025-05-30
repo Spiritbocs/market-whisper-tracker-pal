@@ -310,6 +310,8 @@ export const MarketOverview: React.FC = () => {
             rowsToShow={rowsToShow}
             setRowsToShow={handleRowsToShowChange}
             onExportCSV={handleExportCSV}
+            selectedStocks={selectedStocks}
+            onCompareSelected={handleCompareSelected}
           />
 
           {selectedStocks.length > 0 && (
@@ -318,13 +320,8 @@ export const MarketOverview: React.FC = () => {
                 <p className="text-blue-800 font-medium">
                   {selectedStocks.length} stock(s) selected for analysis. 
                   {selectedStocks.length < 6 && ` You can select up to ${6 - selectedStocks.length} more.`}
+                  {selectedStocks.length === 1 && " Select 1 more to enable comparison."}
                 </p>
-                {selectedStocks.length >= 2 && (
-                  <Button onClick={handleCompareSelected} className="ml-4">
-                    <BarChart3 className="w-4 h-4 mr-2" />
-                    Compare Selected ({selectedStocks.length})
-                  </Button>
-                )}
               </div>
             </div>
           )}
