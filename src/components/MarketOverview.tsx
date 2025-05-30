@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -5,7 +6,7 @@ import { StockCard } from './StockCard';
 import { yahooFinanceService } from '../services/yahooFinanceService';
 import { Stock, MarketNews } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { TrendingUp, TrendingDown, Globe, Clock, Plus, AlertCircle, ArrowUp, ArrowDown, Activity, BarChart3, Star, Target, ShieldCheck, Settings, Filter, Download, Zap, Flame, Skull } from 'lucide-react';
+import { TrendingUp, TrendingDown, Globe, Clock, Plus, AlertCircle, ArrowUp, ArrowDown, Activity, BarChart3, Star, Target, ShieldCheck, Settings, Filter, Download, Zap, Flame, Skull, List, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, AreaChart, Area } from 'recharts';
@@ -329,7 +330,46 @@ export const MarketOverview: React.FC = () => {
 
       <div className="container mx-auto px-6 py-6">
         {/* Top Statistics - Horizontal Layout */}
-        <div className="grid grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+          {/* My Watchlist - Only show if authenticated */}
+          {isAuthenticated && (
+            <div className="bg-card border rounded-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold flex items-center">
+                  <List className="w-5 h-5 mr-2 text-blue-500" />
+                  My Watchlist
+                </h3>
+                <Button variant="ghost" size="sm">
+                  <Eye className="w-4 h-4" />
+                </Button>
+              </div>
+              <div className="space-y-3">
+                {displayWatchlistStocks.slice(0, 3).map((stock, index) => (
+                  <div key={stock.symbol} className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-sm text-muted-foreground w-4">{index + 1}</span>
+                      <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center text-xs font-medium">
+                        {stock.symbol.slice(0, 1)}
+                      </div>
+                      <div>
+                        <div className="font-medium text-sm">{stock.symbol}</div>
+                        <div className="text-xs text-muted-foreground">${stock.price.toFixed(2)}</div>
+                      </div>
+                    </div>
+                    <div className={`text-sm font-medium ${stock.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {stock.changePercent >= 0 ? '+' : ''}{stock.changePercent.toFixed(2)}%
+                    </div>
+                  </div>
+                ))}
+                {displayWatchlistStocks.length === 0 && (
+                  <div className="text-center text-muted-foreground text-sm py-4">
+                    No stocks in watchlist
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Trending Stocks */}
           <div className="bg-card border rounded-lg p-6">
             <div className="flex items-center justify-between mb-4">
