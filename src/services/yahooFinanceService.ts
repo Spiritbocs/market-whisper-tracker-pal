@@ -1,3 +1,4 @@
+
 import { Stock, MarketNews } from '../types';
 
 // Multiple free APIs for redundancy
@@ -210,7 +211,7 @@ class YahooFinanceService {
     }
     
     throw new Error(`All APIs failed for ${symbol}`);
-  },
+  }
 
   async getMultipleQuotes(symbols: string[]): Promise<Stock[]> {
     console.log(`🔴 LIVE: Fetching real data for ${symbols.length} symbols...`);
@@ -227,7 +228,7 @@ class YahooFinanceService {
     
     console.log(`🔴 LIVE: Successfully loaded ${stocks.length}/${symbols.length} stocks`);
     return stocks;
-  },
+  }
 
   async searchSymbols(query: string): Promise<any[]> {
     if (query.length < 2) return [];
@@ -252,7 +253,7 @@ class YahooFinanceService {
       console.error('Search failed:', error);
       return [];
     }
-  },
+  }
 
   async getTrendingStocks(): Promise<Stock[]> {
     try {
@@ -281,16 +282,16 @@ class YahooFinanceService {
       console.error('Failed to fetch trending stocks:', error);
       throw error;
     }
-  },
+  }
 
   async getMarketIndices(): Promise<Stock[]> {
     const indices = ['^GSPC', '^DJI', '^IXIC'];
     return await this.getMultipleQuotes(indices);
-  },
+  }
 
   async getMarketNews(): Promise<MarketNews[]> {
     return [];
-  },
+  }
 
   isUsingMockData(): boolean {
     return false; // Always real data now
