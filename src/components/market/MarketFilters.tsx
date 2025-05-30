@@ -1,10 +1,10 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Settings, Download, BarChart3 } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface MarketFiltersProps {
   activeFilter: string;
@@ -68,39 +68,20 @@ export const MarketFilters: React.FC<MarketFiltersProps> = ({
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Today's Stock Prices by Market Cap</h1>
           <div className="flex items-center space-x-4">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center space-x-2 text-sm text-green-600">
-                    <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                    <span>LIVE - {new Date().toLocaleTimeString()}</span>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Real-time market data updates every minute</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant={selectedStocks.length >= 2 ? "default" : "outline"} 
-                    size="sm"
-                    onClick={onCompareSelected}
-                    disabled={selectedStocks.length < 2}
-                    className={selectedStocks.length === 1 ? "animate-pulse" : ""}
-                  >
-                    <BarChart3 className="w-4 h-4 mr-2" />
-                    {getCompareButtonText()}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Select 2-6 stocks to compare detailed metrics</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <div className="flex items-center space-x-2 text-sm text-green-600">
+              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+              <span>LIVE - {new Date().toLocaleTimeString()}</span>
+            </div>
+            <Button 
+              variant={selectedStocks.length >= 2 ? "default" : "outline"} 
+              size="sm"
+              onClick={onCompareSelected}
+              disabled={selectedStocks.length < 2}
+              className={selectedStocks.length === 1 ? "animate-pulse" : ""}
+            >
+              <BarChart3 className="w-4 h-4 mr-2" />
+              {getCompareButtonText()}
+            </Button>
           </div>
         </div>
       </div>
@@ -108,134 +89,96 @@ export const MarketFilters: React.FC<MarketFiltersProps> = ({
       {/* Controls section */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-4">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Dialog open={showCustomizeModal} onOpenChange={setShowCustomizeModal}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <Settings className="w-4 h-4 mr-2" />
-                      Customize
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl">
-                    <DialogHeader>
-                      <DialogTitle>Choose up to 7/9 metrics</DialogTitle>
-                      <p className="text-sm text-muted-foreground">Add, delete and sort metrics just how you need it</p>
-                    </DialogHeader>
-                    <div className="space-y-6">
-                      <div>
-                        <h4 className="font-medium mb-3">Columns</h4>
-                        <div className="grid grid-cols-3 gap-3">
-                          {availableColumns.map((column) => (
-                            <div key={column.id} className="flex items-center space-x-2">
-                              <Checkbox
-                                checked={tableColumns.includes(column.id)}
-                                onCheckedChange={() => onColumnToggle(column.id)}
-                              />
-                              <label className="text-sm">{column.label}</label>
-                            </div>
-                          ))}
-                        </div>
+          <Dialog open={showCustomizeModal} onOpenChange={setShowCustomizeModal}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Settings className="w-4 h-4 mr-2" />
+                Customize
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Choose up to 7/9 metrics</DialogTitle>
+                <p className="text-sm text-muted-foreground">Add, delete and sort metrics just how you need it</p>
+              </DialogHeader>
+              <div className="space-y-6">
+                <div>
+                  <h4 className="font-medium mb-3">Columns</h4>
+                  <div className="grid grid-cols-3 gap-3">
+                    {availableColumns.map((column) => (
+                      <div key={column.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          checked={tableColumns.includes(column.id)}
+                          onCheckedChange={() => onColumnToggle(column.id)}
+                        />
+                        <label className="text-sm">{column.label}</label>
                       </div>
-                      <div>
-                        <h4 className="font-medium mb-3">Rows to show</h4>
-                        <Select value={rowsToShow.toString()} onValueChange={handleRowsChange}>
-                          <SelectTrigger className="w-32">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="8">Show 8</SelectItem>
-                            <SelectItem value="16">Show 16</SelectItem>
-                            <SelectItem value="24">Show 24</SelectItem>
-                            <SelectItem value="30">Show 30</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="flex justify-end space-x-3">
-                        <Button variant="outline" onClick={() => setShowCustomizeModal(false)}>
-                          Cancel
-                        </Button>
-                        <Button onClick={() => setShowCustomizeModal(false)}>
-                          Apply Changes
-                        </Button>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Customize table columns and display options</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-muted-foreground">Sort by:</span>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Select value={sortBy} onValueChange={setSortBy}>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <h4 className="font-medium mb-3">Rows to show</h4>
+                  <Select value={rowsToShow.toString()} onValueChange={handleRowsChange}>
                     <SelectTrigger className="w-32">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="marketCap">Market Cap</SelectItem>
-                      <SelectItem value="price">Price</SelectItem>
-                      <SelectItem value="change">% Change</SelectItem>
-                      <SelectItem value="volume">Volume</SelectItem>
+                      <SelectItem value="8">Show 8</SelectItem>
+                      <SelectItem value="16">Show 16</SelectItem>
+                      <SelectItem value="24">Show 24</SelectItem>
+                      <SelectItem value="30">Show 30</SelectItem>
                     </SelectContent>
                   </Select>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Sort stocks by different metrics</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+                </div>
+                <div className="flex justify-end space-x-3">
+                  <Button variant="outline" onClick={() => setShowCustomizeModal(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={() => setShowCustomizeModal(false)}>
+                    Apply Changes
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+          
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-muted-foreground">Sort by:</span>
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="marketCap">Market Cap</SelectItem>
+                <SelectItem value="price">Price</SelectItem>
+                <SelectItem value="change">% Change</SelectItem>
+                <SelectItem value="volume">Volume</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" size="sm" onClick={onExportCSV}>
-                  <Download className="w-4 h-4 mr-2" />
-                  Export
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Download market data as CSV file</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <Button variant="outline" size="sm" onClick={onExportCSV}>
+            <Download className="w-4 h-4 mr-2" />
+            Export
+          </Button>
         </div>
       </div>
 
       {/* Filter tabs */}
       <div className="flex items-center space-x-1">
-        <TooltipProvider>
-          {['All', 'Active', 'Gainers', 'Losers'].map((filter) => (
-            <Tooltip key={filter}>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={() => onFilterChange(filter)}
-                  className={`px-4 py-2 text-sm rounded-lg transition-colors ${
-                    activeFilter === filter
-                      ? 'bg-primary text-primary-foreground'
-                      : 'hover:bg-muted text-muted-foreground'
-                  }`}
-                >
-                  {filter}
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                {filter === 'All' && <p>Show all stocks</p>}
-                {filter === 'Active' && <p>Show stocks with high trading volume</p>}
-                {filter === 'Gainers' && <p>Show stocks with positive price change</p>}
-                {filter === 'Losers' && <p>Show stocks with negative price change</p>}
-              </TooltipContent>
-            </Tooltip>
-          ))}
-        </TooltipProvider>
+        {['All', 'Active', 'Gainers', 'Losers'].map((filter) => (
+          <button
+            key={filter}
+            onClick={() => onFilterChange(filter)}
+            className={`px-4 py-2 text-sm rounded-lg transition-colors ${
+              activeFilter === filter
+                ? 'bg-primary text-primary-foreground'
+                : 'hover:bg-muted text-muted-foreground'
+            }`}
+          >
+            {filter}
+          </button>
+        ))}
       </div>
     </>
   );
