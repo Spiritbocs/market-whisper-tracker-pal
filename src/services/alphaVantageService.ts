@@ -1,111 +1,169 @@
 
-import { Stock, StockQuote } from '../types';
+import { Stock, StockQuote, MarketNews } from '../types';
 
-const API_KEY = 'YOUR_API_KEY_HERE'; // User will replace this
+const API_KEY = 'YOUR_API_KEY_HERE'; // Replace with your Alpha Vantage API key
 const BASE_URL = 'https://www.alphavantage.co/query';
 
-// Cache to store API responses and timestamps
+// Cache to store API responses and respect rate limits
 const cache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_DURATION = 60000; // 1 minute cache to respect API limits
+const CACHE_DURATION = 60000; // 1 minute cache
+const REQUEST_DELAY = 12000; // 12 seconds between requests (5 per minute limit)
 
-class AlphaVantageService {
-  private async makeRequest(params: Record<string, string>) {
-    const cacheKey = JSON.stringify(params);
-    const cached = cache.get(cacheKey);
+let lastRequestTime = 0;
+
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+const makeRequest = async (url: string): Promise<any> => {
+  const cacheKey = url;
+  const cached = cache.get(cacheKey);
+  
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    return cached.data;
+  }
+
+  // Respect rate limit
+  const timeSinceLastRequest = Date.now() - lastRequestTime;
+  if (timeSinceLastRequest < REQUEST_DELAY) {
+    await delay(REQUEST_DELAY - timeSinceLastRequest);
+  }
+
+  lastRequestTime = Date.now();
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
     
-    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-      console.log('Using cached data for:', params);
-      return cached.data;
+    const data = await response.json();
+    
+    if (data['Error Message'] || data['Note']) {
+      throw new Error(data['Error Message'] || data['Note']);
     }
 
-    const url = new URL(BASE_URL);
-    Object.entries(params).forEach(([key, value]) => {
-      url.searchParams.append(key, value);
-    });
-    url.searchParams.append('apikey', API_KEY);
-
-    try {
-      console.log('Making API request:', url.toString());
-      const response = await fetch(url.toString());
-      const data = await response.json();
-      
-      if (data['Error Message']) {
-        throw new Error(data['Error Message']);
-      }
-      
-      if (data['Note']) {
-        console.warn('API Rate limit warning:', data['Note']);
-        throw new Error('API rate limit reached. Please wait a moment.');
-      }
-
-      cache.set(cacheKey, { data, timestamp: Date.now() });
-      return data;
-    } catch (error) {
-      console.error('API request failed:', error);
-      throw error;
-    }
+    cache.set(cacheKey, { data, timestamp: Date.now() });
+    return data;
+  } catch (error) {
+    console.error('API request failed:', error);
+    throw error;
   }
+};
 
+const parseStockData = (data: StockQuote, symbol: string): Stock => {
+  const price = parseFloat(data['05. price']) || 0;
+  const change = parseFloat(data['09. change']) || 0;
+  const changePercent = parseFloat(data['10. change percent'].replace('%', '')) || 0;
+
+  return {
+    symbol: symbol,
+    name: symbol, // Alpha Vantage doesn't provide company names in quotes
+    price,
+    change,
+    changePercent,
+    lastUpdated: new Date().toISOString(),
+  };
+};
+
+export const alphaVantageService = {
   async getQuote(symbol: string): Promise<Stock> {
-    const data = await this.makeRequest({
-      function: 'GLOBAL_QUOTE',
-      symbol: symbol.toUpperCase(),
-    });
-
-    const quote = data['Global Quote'] as StockQuote;
-    if (!quote) {
-      throw new Error(`No data found for symbol: ${symbol}`);
+    const url = `${BASE_URL}?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${API_KEY}`;
+    const data = await makeRequest(url);
+    
+    if (!data['Global Quote']) {
+      throw new Error('Invalid symbol or API response');
     }
 
-    return {
-      symbol: quote['01. symbol'],
-      name: quote['01. symbol'], // Alpha Vantage doesn't provide company name in this endpoint
-      price: parseFloat(quote['05. price']),
-      change: parseFloat(quote['09. change']),
-      changePercent: parseFloat(quote['10. change percent'].replace('%', '')),
-      lastUpdated: new Date().toISOString(),
-    };
-  }
+    return parseStockData(data['Global Quote'], symbol);
+  },
 
   async getMultipleQuotes(symbols: string[]): Promise<Stock[]> {
-    const promises = symbols.map(symbol => 
-      this.getQuote(symbol).catch(error => {
+    const stocks: Stock[] = [];
+    
+    // Process symbols in batches to respect rate limits
+    for (const symbol of symbols) {
+      try {
+        const stock = await this.getQuote(symbol);
+        stocks.push(stock);
+      } catch (error) {
         console.error(`Failed to fetch ${symbol}:`, error);
-        return null;
-      })
-    );
+        // Add placeholder data for failed requests
+        stocks.push({
+          symbol,
+          name: symbol,
+          price: 0,
+          change: 0,
+          changePercent: 0,
+          lastUpdated: new Date().toISOString(),
+        });
+      }
+    }
+    
+    return stocks;
+  },
 
-    const results = await Promise.all(promises);
-    return results.filter((stock): stock is Stock => stock !== null);
-  }
+  async searchSymbols(query: string): Promise<any[]> {
+    const url = `${BASE_URL}?function=SYMBOL_SEARCH&keywords=${query}&apikey=${API_KEY}`;
+    const data = await makeRequest(url);
+    
+    if (!data['bestMatches']) {
+      return [];
+    }
 
-  async searchSymbols(query: string) {
-    const data = await this.makeRequest({
-      function: 'SYMBOL_SEARCH',
-      keywords: query,
-    });
-
-    const matches = data['bestMatches'] || [];
-    return matches.slice(0, 10).map((match: any) => ({
+    return data['bestMatches'].map((match: any) => ({
       symbol: match['1. symbol'],
       name: match['2. name'],
       type: match['3. type'],
       region: match['4. region'],
-      currency: match['8. currency'],
     }));
-  }
+  },
 
-  // Get popular stocks (hardcoded list since Alpha Vantage doesn't have a "trending" endpoint)
   async getTrendingStocks(): Promise<Stock[]> {
-    const trendingSymbols = ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'TSLA', 'META', 'NVDA', 'NFLX'];
-    return this.getMultipleQuotes(trendingSymbols.slice(0, 6)); // Limit to 6 to save API calls
-  }
+    // Popular stocks to display (you can customize this list)
+    const popularSymbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'META', 'NVDA', 'NFLX'];
+    
+    try {
+      const stocks = await this.getMultipleQuotes(popularSymbols);
+      return stocks.filter(stock => stock.price > 0); // Filter out failed requests
+    } catch (error) {
+      console.error('Failed to fetch trending stocks:', error);
+      return [];
+    }
+  },
 
-  // Get market indices
   async getMarketIndices(): Promise<Stock[]> {
-    const indices = ['SPY', 'QQQ', 'DIA']; // ETFs that track major indices
-    return this.getMultipleQuotes(indices);
-  }
-}
+    // Major market indices
+    const indices = ['^GSPC', '^DJI', '^IXIC']; // S&P 500, Dow Jones, NASDAQ
+    
+    try {
+      const stocks = await this.getMultipleQuotes(indices);
+      return stocks.filter(stock => stock.price > 0);
+    } catch (error) {
+      console.error('Failed to fetch market indices:', error);
+      return [];
+    }
+  },
 
-export const alphaVantageService = new AlphaVantageService();
+  async getMarketNews(): Promise<MarketNews[]> {
+    const url = `${BASE_URL}?function=NEWS_SENTIMENT&apikey=${API_KEY}`;
+    
+    try {
+      const data = await makeRequest(url);
+      
+      if (!data.feed) {
+        return [];
+      }
+
+      return data.feed.slice(0, 20).map((article: any) => ({
+        title: article.title,
+        summary: article.summary,
+        url: article.url,
+        time_published: article.time_published,
+        source: article.source,
+        banner_image: article.banner_image,
+      }));
+    } catch (error) {
+      console.error('Failed to fetch market news:', error);
+      return [];
+    }
+  },
+};

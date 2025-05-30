@@ -1,16 +1,21 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { AuthState, User, Watchlist } from '../types';
+import { supabase } from '@/integrations/supabase/client';
+import { AuthState, Profile, Watchlist } from '../types';
 import { toast } from 'sonner';
+import type { User, Session } from '@supabase/supabase-js';
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<boolean>;
-  register: (email: string, password: string, name: string) => Promise<boolean>;
-  logout: () => void;
-  addWatchlist: (name: string) => void;
-  removeWatchlist: (id: string) => void;
-  addStockToWatchlist: (watchlistId: string, symbol: string) => void;
-  removeStockFromWatchlist: (watchlistId: string, symbol: string) => void;
+  register: (email: string, password: string, fullName: string) => Promise<boolean>;
+  logout: () => Promise<void>;
+  resetPassword: (email: string) => Promise<boolean>;
+  watchlists: Watchlist[];
+  loadWatchlists: () => Promise<void>;
+  addWatchlist: (name: string) => Promise<void>;
+  removeWatchlist: (id: string) => Promise<void>;
+  addStockToWatchlist: (watchlistId: string, symbol: string) => Promise<void>;
+  removeStockFromWatchlist: (watchlistId: string, symbol: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -24,181 +29,214 @@ export const useAuth = () => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [authState, setAuthState] = useState<AuthState>({
-    user: null,
-    isAuthenticated: false,
-  });
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [watchlists, setWatchlists] = useState<Watchlist[]>([]);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('market-watchlist-user');
-    if (savedUser) {
-      const user = JSON.parse(savedUser);
-      setAuthState({
-        user,
-        isAuthenticated: true,
-      });
-    }
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setIsAuthenticated(!!session?.user);
+        
+        if (session?.user) {
+          setTimeout(() => {
+            loadProfile(session.user.id);
+            loadWatchlists();
+          }, 0);
+        } else {
+          setProfile(null);
+          setWatchlists([]);
+        }
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setIsAuthenticated(!!session?.user);
+      
+      if (session?.user) {
+        loadProfile(session.user.id);
+        loadWatchlists();
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const saveUserToStorage = (user: User) => {
-    localStorage.setItem('market-watchlist-user', JSON.stringify(user));
+  const loadProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) throw error;
+      setProfile(data);
+    } catch (error) {
+      console.error('Error loading profile:', error);
+    }
+  };
+
+  const loadWatchlists = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('watchlists')
+        .select(`
+          *,
+          watchlist_stocks (
+            id,
+            symbol,
+            added_at
+          )
+        `)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      setWatchlists(data || []);
+    } catch (error) {
+      console.error('Error loading watchlists:', error);
+    }
   };
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    const users = JSON.parse(localStorage.getItem('market-watchlist-users') || '[]');
-    const user = users.find((u: any) => u.email === email && u.password === password);
-    
-    if (user) {
-      const { password: _, ...userWithoutPassword } = user;
-      setAuthState({
-        user: userWithoutPassword,
-        isAuthenticated: true,
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
-      saveUserToStorage(userWithoutPassword);
+
+      if (error) throw error;
       toast.success('Welcome back!');
       return true;
-    }
-    
-    toast.error('Invalid credentials');
-    return false;
-  };
-
-  const register = async (email: string, password: string, name: string): Promise<boolean> => {
-    const users = JSON.parse(localStorage.getItem('market-watchlist-users') || '[]');
-    
-    if (users.find((u: any) => u.email === email)) {
-      toast.error('Email already exists');
+    } catch (error: any) {
+      toast.error(error.message || 'Login failed');
       return false;
     }
-
-    const newUser: User & { password: string } = {
-      id: Date.now().toString(),
-      email,
-      name,
-      password,
-      watchlists: [{
-        id: 'default',
-        name: 'My Watchlist',
-        stocks: ['AAPL', 'GOOGL', 'MSFT'],
-        createdAt: new Date().toISOString(),
-      }],
-      createdAt: new Date().toISOString(),
-    };
-
-    users.push(newUser);
-    localStorage.setItem('market-watchlist-users', JSON.stringify(users));
-
-    const { password: _, ...userWithoutPassword } = newUser;
-    setAuthState({
-      user: userWithoutPassword,
-      isAuthenticated: true,
-    });
-    saveUserToStorage(userWithoutPassword);
-    toast.success('Account created successfully!');
-    return true;
   };
 
-  const logout = () => {
-    setAuthState({
-      user: null,
-      isAuthenticated: false,
-    });
-    localStorage.removeItem('market-watchlist-user');
-    toast.success('Logged out successfully');
-  };
+  const register = async (email: string, password: string, fullName: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+          },
+        },
+      });
 
-  const updateUser = (updatedUser: User) => {
-    setAuthState(prev => ({
-      ...prev,
-      user: updatedUser,
-    }));
-    saveUserToStorage(updatedUser);
-    
-    // Update in users array too
-    const users = JSON.parse(localStorage.getItem('market-watchlist-users') || '[]');
-    const userIndex = users.findIndex((u: any) => u.id === updatedUser.id);
-    if (userIndex !== -1) {
-      users[userIndex] = { ...users[userIndex], ...updatedUser };
-      localStorage.setItem('market-watchlist-users', JSON.stringify(users));
+      if (error) throw error;
+      toast.success('Account created successfully!');
+      return true;
+    } catch (error: any) {
+      toast.error(error.message || 'Registration failed');
+      return false;
     }
   };
 
-  const addWatchlist = (name: string) => {
-    if (!authState.user) return;
-    
-    const newWatchlist: Watchlist = {
-      id: Date.now().toString(),
-      name,
-      stocks: [],
-      createdAt: new Date().toISOString(),
-    };
-
-    const updatedUser = {
-      ...authState.user,
-      watchlists: [...authState.user.watchlists, newWatchlist],
-    };
-
-    updateUser(updatedUser);
-    toast.success(`Watchlist "${name}" created!`);
+  const logout = async (): Promise<void> => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      toast.success('Logged out successfully');
+    } catch (error: any) {
+      toast.error(error.message || 'Logout failed');
+    }
   };
 
-  const removeWatchlist = (id: string) => {
-    if (!authState.user) return;
-    
-    const updatedUser = {
-      ...authState.user,
-      watchlists: authState.user.watchlists.filter(w => w.id !== id),
-    };
-
-    updateUser(updatedUser);
-    toast.success('Watchlist removed');
+  const resetPassword = async (email: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      if (error) throw error;
+      toast.success('Password reset email sent!');
+      return true;
+    } catch (error: any) {
+      toast.error(error.message || 'Password reset failed');
+      return false;
+    }
   };
 
-  const addStockToWatchlist = (watchlistId: string, symbol: string) => {
-    if (!authState.user) return;
-    
-    const updatedWatchlists = authState.user.watchlists.map(w => {
-      if (w.id === watchlistId && !w.stocks.includes(symbol.toUpperCase())) {
-        return { ...w, stocks: [...w.stocks, symbol.toUpperCase()] };
-      }
-      return w;
-    });
+  const addWatchlist = async (name: string): Promise<void> => {
+    try {
+      const { error } = await supabase
+        .from('watchlists')
+        .insert([{ name, user_id: user?.id }]);
 
-    const updatedUser = {
-      ...authState.user,
-      watchlists: updatedWatchlists,
-    };
-
-    updateUser(updatedUser);
-    toast.success(`${symbol.toUpperCase()} added to watchlist`);
+      if (error) throw error;
+      toast.success(`Watchlist "${name}" created!`);
+      loadWatchlists();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to create watchlist');
+    }
   };
 
-  const removeStockFromWatchlist = (watchlistId: string, symbol: string) => {
-    if (!authState.user) return;
-    
-    const updatedWatchlists = authState.user.watchlists.map(w => {
-      if (w.id === watchlistId) {
-        return { ...w, stocks: w.stocks.filter(s => s !== symbol) };
-      }
-      return w;
-    });
+  const removeWatchlist = async (id: string): Promise<void> => {
+    try {
+      const { error } = await supabase
+        .from('watchlists')
+        .delete()
+        .eq('id', id);
 
-    const updatedUser = {
-      ...authState.user,
-      watchlists: updatedWatchlists,
-    };
+      if (error) throw error;
+      toast.success('Watchlist removed');
+      loadWatchlists();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to remove watchlist');
+    }
+  };
 
-    updateUser(updatedUser);
-    toast.success(`${symbol} removed from watchlist`);
+  const addStockToWatchlist = async (watchlistId: string, symbol: string): Promise<void> => {
+    try {
+      const { error } = await supabase
+        .from('watchlist_stocks')
+        .insert([{ watchlist_id: watchlistId, symbol: symbol.toUpperCase() }]);
+
+      if (error) throw error;
+      toast.success(`${symbol.toUpperCase()} added to watchlist`);
+      loadWatchlists();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to add stock');
+    }
+  };
+
+  const removeStockFromWatchlist = async (watchlistId: string, symbol: string): Promise<void> => {
+    try {
+      const { error } = await supabase
+        .from('watchlist_stocks')
+        .delete()
+        .eq('watchlist_id', watchlistId)
+        .eq('symbol', symbol);
+
+      if (error) throw error;
+      toast.success(`${symbol} removed from watchlist`);
+      loadWatchlists();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to remove stock');
+    }
   };
 
   return (
     <AuthContext.Provider
       value={{
-        ...authState,
+        user,
+        session,
+        profile,
+        isAuthenticated,
+        watchlists,
         login,
         register,
         logout,
+        resetPassword,
+        loadWatchlists,
         addWatchlist,
         removeWatchlist,
         addStockToWatchlist,

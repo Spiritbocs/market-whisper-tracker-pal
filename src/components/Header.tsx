@@ -2,10 +2,9 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
 import { AuthModal } from './AuthModal';
 import { ThemeSelector } from './ThemeSelector';
-import { User, LogOut, Settings } from 'lucide-react';
+import { User, LogOut, BarChart3 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,18 +13,21 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 export const Header: React.FC = () => {
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, profile, logout } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   return (
     <>
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                Market Watchlist
-              </h1>
+              <div className="flex items-center space-x-2">
+                <BarChart3 className="w-6 h-6 text-primary" />
+                <h1 className="text-xl font-bold text-foreground">
+                  Market Watchlist
+                </h1>
+              </div>
             </div>
 
             <div className="flex items-center space-x-4">
@@ -36,7 +38,9 @@ export const Header: React.FC = () => {
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="flex items-center space-x-2">
                       <User className="w-4 h-4" />
-                      <span className="hidden sm:inline">{user?.name}</span>
+                      <span className="hidden sm:inline">
+                        {profile?.full_name || profile?.email || 'User'}
+                      </span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
@@ -48,7 +52,7 @@ export const Header: React.FC = () => {
                 </DropdownMenu>
               ) : (
                 <Button onClick={() => setShowAuthModal(true)}>
-                  Login
+                  Sign In
                 </Button>
               )}
             </div>

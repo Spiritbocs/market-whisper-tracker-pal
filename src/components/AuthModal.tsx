@@ -13,9 +13,16 @@ interface AuthModalProps {
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
-  const { login, register } = useAuth();
+  const { login, register, resetPassword } = useAuth();
+  const [activeTab, setActiveTab] = useState('login');
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
-  const [registerForm, setRegisterForm] = useState({ email: '', password: '', name: '', confirmPassword: '' });
+  const [registerForm, setRegisterForm] = useState({ 
+    email: '', 
+    password: '', 
+    fullName: '', 
+    confirmPassword: '' 
+  });
+  const [resetForm, setResetForm] = useState({ email: '' });
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -35,10 +42,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       return;
     }
     setIsLoading(true);
-    const success = await register(registerForm.email, registerForm.password, registerForm.name);
+    const success = await register(registerForm.email, registerForm.password, registerForm.fullName);
     if (success) {
       onClose();
-      setRegisterForm({ email: '', password: '', name: '', confirmPassword: '' });
+      setRegisterForm({ email: '', password: '', fullName: '', confirmPassword: '' });
+    }
+    setIsLoading(false);
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    const success = await resetPassword(resetForm.email);
+    if (success) {
+      setActiveTab('login');
+      setResetForm({ email: '' });
     }
     setIsLoading(false);
   };
@@ -47,13 +65,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Welcome to Market Watchlist</DialogTitle>
+          <DialogTitle>Market Watchlist</DialogTitle>
         </DialogHeader>
         
-        <Tabs defaultValue="login" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="login">Login</TabsTrigger>
             <TabsTrigger value="register">Register</TabsTrigger>
+            <TabsTrigger value="reset">Reset</TabsTrigger>
           </TabsList>
           
           <TabsContent value="login">
@@ -79,7 +98,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 />
               </div>
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Logging in...' : 'Login'}
+                {isLoading ? 'Signing in...' : 'Sign In'}
               </Button>
             </form>
           </TabsContent>
@@ -90,8 +109,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 <Label htmlFor="register-name">Full Name</Label>
                 <Input
                   id="register-name"
-                  value={registerForm.name}
-                  onChange={(e) => setRegisterForm(prev => ({ ...prev, name: e.target.value }))}
+                  value={registerForm.fullName}
+                  onChange={(e) => setRegisterForm(prev => ({ ...prev, fullName: e.target.value }))}
                   required
                 />
               </div>
@@ -127,6 +146,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               </div>
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? 'Creating Account...' : 'Create Account'}
+              </Button>
+            </form>
+          </TabsContent>
+
+          <TabsContent value="reset">
+            <form onSubmit={handleResetPassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="reset-email">Email</Label>
+                <Input
+                  id="reset-email"
+                  type="email"
+                  value={resetForm.email}
+                  onChange={(e) => setResetForm(prev => ({ ...prev, email: e.target.value }))}
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? 'Sending...' : 'Send Reset Email'}
               </Button>
             </form>
           </TabsContent>

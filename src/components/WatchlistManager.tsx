@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,17 +9,20 @@ import { StockCard } from './StockCard';
 import { StockSearch } from './StockSearch';
 import { alphaVantageService } from '../services/alphaVantageService';
 import { Stock } from '../types';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, List } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const WatchlistManager: React.FC = () => {
-  const { user, addWatchlist, removeWatchlist, removeStockFromWatchlist } = useAuth();
+  const { watchlists, addWatchlist, removeWatchlist, removeStockFromWatchlist, loadWatchlists } = useAuth();
   const [stocks, setStocks] = useState<Record<string, Stock[]>>({});
   const [newWatchlistName, setNewWatchlistName] = useState('');
   const [isLoading, setIsLoading] = useState<Record<string, boolean>>({});
 
   const loadWatchlistStocks = async (watchlistId: string, symbols: string[]) => {
-    if (symbols.length === 0) return;
+    if (symbols.length === 0) {
+      setStocks(prev => ({ ...prev, [watchlistId]: [] }));
+      return;
+    }
     
     setIsLoading(prev => ({ ...prev, [watchlistId]: true }));
     try {
@@ -34,28 +37,26 @@ export const WatchlistManager: React.FC = () => {
   };
 
   useEffect(() => {
-    if (user?.watchlists) {
-      user.watchlists.forEach(watchlist => {
-        loadWatchlistStocks(watchlist.id, watchlist.stocks);
-      });
-    }
-  }, [user?.watchlists]);
+    watchlists.forEach(watchlist => {
+      const symbols = watchlist.watchlist_stocks?.map(ws => ws.symbol) || [];
+      loadWatchlistStocks(watchlist.id, symbols);
+    });
+  }, [watchlists]);
 
-  const handleCreateWatchlist = () => {
+  const handleCreateWatchlist = async () => {
     if (newWatchlistName.trim()) {
-      addWatchlist(newWatchlistName.trim());
+      await addWatchlist(newWatchlistName.trim());
       setNewWatchlistName('');
     }
   };
 
   const handleStockAdded = (watchlistId: string) => {
-    const watchlist = user?.watchlists.find(w => w.id === watchlistId);
-    if (watchlist) {
-      loadWatchlistStocks(watchlistId, watchlist.stocks);
-    }
+    loadWatchlists();
   };
 
-  if (!user) return null;
+  const handleRemoveStock = async (watchlistId: string, symbol: string) => {
+    await removeStockFromWatchlist(watchlistId, symbol);
+  };
 
   return (
     <div className="space-y-6">
@@ -89,60 +90,66 @@ export const WatchlistManager: React.FC = () => {
       </div>
 
       <div className="grid gap-6">
-        {user.watchlists.map((watchlist) => (
-          <Card key={watchlist.id}>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center space-x-2">
-                  <span>{watchlist.name}</span>
-                  <span className="text-sm text-muted-foreground">
-                    ({watchlist.stocks.length} stocks)
-                  </span>
-                </CardTitle>
+        {watchlists.map((watchlist) => {
+          const watchlistStocks = stocks[watchlist.id] || [];
+          const stockSymbols = watchlist.watchlist_stocks?.map(ws => ws.symbol) || [];
+          
+          return (
+            <Card key={watchlist.id}>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center space-x-2">
+                    <List className="w-5 h-5" />
+                    <span>{watchlist.name}</span>
+                    <span className="text-sm text-muted-foreground">
+                      ({stockSymbols.length} stocks)
+                    </span>
+                  </CardTitle>
+                  
+                  <div className="flex items-center space-x-2">
+                    {!watchlist.is_default && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeWatchlist(watchlist.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
                 
-                <div className="flex items-center space-x-2">
-                  {watchlist.id !== 'default' && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => removeWatchlist(watchlist.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  )}
-                </div>
-              </div>
+                <StockSearch
+                  watchlistId={watchlist.id}
+                  onStockSelect={() => handleStockAdded(watchlist.id)}
+                />
+              </CardHeader>
               
-              <StockSearch
-                watchlistId={watchlist.id}
-                onStockSelect={() => handleStockAdded(watchlist.id)}
-              />
-            </CardHeader>
-            
-            <CardContent>
-              {isLoading[watchlist.id] ? (
-                <div className="text-center py-8">Loading stocks...</div>
-              ) : stocks[watchlist.id]?.length > 0 ? (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {stocks[watchlist.id].map((stock) => (
-                    <StockCard
-                      key={stock.symbol}
-                      stock={stock}
-                      showRemoveButton
-                      onRemoveFromWatchlist={() => 
-                        removeStockFromWatchlist(watchlist.id, stock.symbol)
-                      }
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  No stocks in this watchlist. Use the search above to add some!
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
+              <CardContent>
+                {isLoading[watchlist.id] ? (
+                  <div className="text-center py-8">Loading stocks...</div>
+                ) : watchlistStocks.length > 0 ? (
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {watchlistStocks.map((stock) => (
+                      <StockCard
+                        key={stock.symbol}
+                        stock={stock}
+                        showRemoveButton
+                        onRemoveFromWatchlist={() => 
+                          handleRemoveStock(watchlist.id, stock.symbol)
+                        }
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No stocks in this watchlist. Use the search above to add some!
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );
