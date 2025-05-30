@@ -179,7 +179,9 @@ const tryAlphaVantage = async (symbol: string): Promise<Stock> => {
   };
 };
 
-export const yahooFinanceService = {
+class YahooFinanceService {
+  private stockUniverse = STOCK_UNIVERSE;
+  
   async getQuote(symbol: string): Promise<Stock> {
     const cacheKey = `quote_${symbol}`;
     const cached = cache.get(cacheKey);
@@ -253,9 +255,32 @@ export const yahooFinanceService = {
   },
 
   async getTrendingStocks(): Promise<Stock[]> {
-    const randomSymbols = getRandomStocks(30);
-    console.log('🔴 LIVE: Loading random diverse stocks:', randomSymbols);
-    return await this.getMultipleQuotes(randomSymbols);
+    try {
+      console.log('🔴 LIVE: Fetching trending stocks...');
+      
+      // Load more stocks to ensure we have enough after filtering
+      const shuffled = [...this.stockUniverse].sort(() => 0.5 - Math.random());
+      const selectedSymbols = shuffled.slice(0, 100); // Increased from 30 to 100
+      
+      console.log('🔴 LIVE: Fetching real data for', selectedSymbols.length, 'symbols...');
+      
+      const stocks = await this.getMultipleQuotes(selectedSymbols);
+      
+      // Filter out any stocks that failed to load and ensure we have valid data
+      const validStocks = stocks.filter(stock => 
+        stock && 
+        typeof stock.price === 'number' && 
+        stock.price > 0 &&
+        typeof stock.changePercent === 'number'
+      );
+      
+      console.log(`🔴 LIVE: Successfully loaded ${validStocks.length}/${selectedSymbols.length} stocks`);
+      
+      return validStocks;
+    } catch (error) {
+      console.error('Failed to fetch trending stocks:', error);
+      throw error;
+    }
   },
 
   async getMarketIndices(): Promise<Stock[]> {
@@ -270,4 +295,6 @@ export const yahooFinanceService = {
   isUsingMockData(): boolean {
     return false; // Always real data now
   }
-};
+}
+
+export const yahooFinanceService = new YahooFinanceService();
