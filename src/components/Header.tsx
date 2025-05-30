@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '../contexts/AuthContext';
 import { AuthModal } from './AuthModal';
 import { ThemeSelector } from './ThemeSelector';
-import { User, LogOut, BarChart3 } from 'lucide-react';
+import { User, LogOut, MessageSquare } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,9 +23,9 @@ export const Header: React.FC = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
-                <BarChart3 className="w-6 h-6 text-primary" />
+                <MessageSquare className="w-6 h-6 text-primary" />
                 <h1 className="text-xl font-bold text-foreground">
-                  Market Watchlist
+                  Market Whisperer
                 </h1>
               </div>
             </div>
