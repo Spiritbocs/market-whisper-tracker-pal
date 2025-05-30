@@ -9,6 +9,7 @@ import { WatchlistTabs } from './watchlist/WatchlistTabs';
 import { WatchlistControls } from './watchlist/WatchlistControls';
 import { WatchlistTable } from './watchlist/WatchlistTable';
 import { EmptyWatchlistState } from './watchlist/EmptyWatchlistState';
+import { supabase } from '@/integrations/supabase/client';
 
 export const WatchlistManager: React.FC = () => {
   const { watchlists, addWatchlist, removeWatchlist, removeStockFromWatchlist, loadWatchlists } = useAuth();
@@ -90,8 +91,21 @@ export const WatchlistManager: React.FC = () => {
   };
 
   const handleRenameWatchlist = async (watchlistId: string, newName: string) => {
-    toast.info('Rename functionality will be available soon');
-    setEditingWatchlist(null);
+    try {
+      const { error } = await supabase
+        .from('watchlists')
+        .update({ name: newName.trim() })
+        .eq('id', watchlistId);
+
+      if (error) throw error;
+
+      toast.success('Watchlist renamed successfully');
+      await loadWatchlists();
+      setEditingWatchlist(null);
+    } catch (error) {
+      console.error('Error renaming watchlist:', error);
+      toast.error('Failed to rename watchlist');
+    }
   };
 
   const selectedWatchlistData = watchlists.find(w => w.id === selectedWatchlist);
