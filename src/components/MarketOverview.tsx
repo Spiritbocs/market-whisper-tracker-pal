@@ -5,7 +5,7 @@ import { StockCard } from './StockCard';
 import { yahooFinanceService } from '../services/yahooFinanceService';
 import { Stock, MarketNews } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { TrendingUp, TrendingDown, Globe, Clock, Plus, AlertCircle, ArrowUp, ArrowDown, Activity, BarChart3, Star, Target, ShieldCheck, Settings, Filter, Download } from 'lucide-react';
+import { TrendingUp, TrendingDown, Globe, Clock, Plus, AlertCircle, ArrowUp, ArrowDown, Activity, BarChart3, Star, Target, ShieldCheck, Settings, Filter, Download, Zap, Flame, Skull } from 'lucide-react';
 import { toast } from 'sonner';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, AreaChart, Area } from 'recharts';
@@ -41,6 +41,46 @@ const generateStockChart = (changePercent: number) => {
     time: i,
     value: baseValue + (trend * i * 2) + (Math.random() - 0.5) * volatility * 10
   }));
+};
+
+const getPerformanceIndicator = (changePercent: number) => {
+  if (changePercent > 3) {
+    return {
+      icon: Flame,
+      text: "Hot!",
+      color: "text-orange-500"
+    };
+  } else if (changePercent > 1) {
+    return {
+      icon: TrendingUp,
+      text: "Good",
+      color: "text-green-500"
+    };
+  } else if (changePercent > 0) {
+    return {
+      icon: ArrowUp,
+      text: "Up",
+      color: "text-green-400"
+    };
+  } else if (changePercent > -1) {
+    return {
+      icon: ArrowDown,
+      text: "Down",
+      color: "text-red-400"
+    };
+  } else if (changePercent > -3) {
+    return {
+      icon: TrendingDown,
+      text: "Bad",
+      color: "text-red-500"
+    };
+  } else {
+    return {
+      icon: Skull,
+      text: "Hell Nah",
+      color: "text-red-600"
+    };
+  }
 };
 
 const getRecommendation = (stock: Stock): { action: string; reason: string; color: string; icon: any } => {
@@ -508,8 +548,8 @@ export const MarketOverview: React.FC = () => {
                     </thead>
                     <tbody>
                       {filteredStocks.map((stock, index) => {
-                        const chartData = generateStockChart(stock.changePercent);
-                        const isPositive = stock.changePercent >= 0;
+                        const performance = getPerformanceIndicator(stock.changePercent);
+                        const PerformanceIcon = performance.icon;
                         
                         return (
                           <tr key={stock.symbol} className="border-b hover:bg-muted/30 transition-colors">
@@ -560,27 +600,12 @@ export const MarketOverview: React.FC = () => {
                               {stock.volume ? `$${(stock.volume / 1000000).toFixed(1)}M` : 'N/A'}
                             </td>
                             <td className="text-right p-4">
-                              <ChartContainer 
-                                config={{ 
-                                  value: { 
-                                    label: 'Price', 
-                                    color: isPositive ? '#22c55e' : '#ef4444' 
-                                  } 
-                                }} 
-                                className="w-24 h-12"
-                              >
-                                <LineChart data={chartData}>
-                                  <Line 
-                                    type="monotone" 
-                                    dataKey="value" 
-                                    stroke={isPositive ? '#22c55e' : '#ef4444'} 
-                                    strokeWidth={2}
-                                    dot={false}
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                  />
-                                </LineChart>
-                              </ChartContainer>
+                              <div className="flex items-center justify-end space-x-2">
+                                <PerformanceIcon className={`w-4 h-4 ${performance.color}`} />
+                                <span className={`text-sm font-medium ${performance.color}`}>
+                                  {performance.text}
+                                </span>
+                              </div>
                             </td>
                           </tr>
                         );
