@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -276,18 +277,18 @@ export const MarketOverview: React.FC = () => {
       </div>
 
       <div className="w-full px-4 py-6">
-        {/* Trending section with cards - Reduced height */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-          {/* Trending Stocks card */}
-          <Card className="lg:col-span-2">
+        {/* Compact trending section with improved layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-8">
+          {/* Trending Stocks card - More compact */}
+          <Card className="h-[200px]">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center">
                 <TrendingUp className="w-4 h-4 mr-2" />
                 Trending Stocks
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-1">
-              {trendingStocks.slice(0, 4).map((stock, index) => (
+            <CardContent className="space-y-2 overflow-y-auto max-h-[140px]">
+              {trendingStocks.slice(0, 5).map((stock, index) => (
                 <div key={stock.symbol} className="flex items-center justify-between py-1">
                   <div className="flex items-center space-x-2">
                     <span className="text-xs text-muted-foreground w-3">{index + 1}</span>
@@ -296,86 +297,133 @@ export const MarketOverview: React.FC = () => {
                     </div>
                     <span className="font-medium text-xs">{stock.symbol}</span>
                   </div>
-                  <div className="text-right">
-                    <div className="font-medium text-xs">${stock.price.toFixed(2)}</div>
-                    <div className={`text-xs ${stock.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {stock.changePercent >= 0 ? '↗' : '↘'} {Math.abs(stock.changePercent).toFixed(2)}%
+                  <div className="text-right flex items-center space-x-2">
+                    <div className="text-right">
+                      <div className="font-medium text-xs">${stock.price.toFixed(2)}</div>
+                      <div className={`text-xs ${stock.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {stock.changePercent >= 0 ? '↗' : '↘'} {Math.abs(stock.changePercent).toFixed(2)}%
+                      </div>
                     </div>
+                    <ChartContainer config={{ value: { label: 'Price', color: stock.changePercent >= 0 ? '#22c55e' : '#ef4444' } }} className="w-12 h-6">
+                      <LineChart data={marketCapData.slice(-4)}>
+                        <Line 
+                          type="monotone" 
+                          dataKey="value" 
+                          stroke={stock.changePercent >= 0 ? '#22c55e' : '#ef4444'} 
+                          strokeWidth={1}
+                          dot={false}
+                        />
+                      </LineChart>
+                    </ChartContainer>
                   </div>
                 </div>
               ))}
-              <div className="text-xs text-muted-foreground pt-1">
-                Updated: {new Date().toLocaleTimeString()}
-              </div>
             </CardContent>
           </Card>
 
           {/* Market Cap card with chart */}
-          <Card>
+          <Card className="h-[200px]">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm">Market Cap</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-xl font-bold">$45.2T</div>
-              <div className="text-green-600 text-xs flex items-center mb-2">
-                <ArrowUp className="w-3 h-3 mr-1" />
-                2.1% (24h)
+              <div className="space-y-2">
+                <div className="text-2xl font-bold">$45.33T</div>
+                <div className="text-red-600 text-sm flex items-center">
+                  <TrendingDown className="w-3 h-3 mr-1" />
+                  3.14% (24h)
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Dominance: BTC: 61% ETH: 9.5%
+                </div>
+                <ChartContainer config={{ value: { label: 'Market Cap', color: '#ef4444' } }} className="h-16 mt-2">
+                  <AreaChart data={marketCapData}>
+                    <Area 
+                      type="monotone" 
+                      dataKey="value" 
+                      stroke="#ef4444" 
+                      fill="#ef4444" 
+                      fillOpacity={0.2}
+                      strokeWidth={1}
+                    />
+                  </AreaChart>
+                </ChartContainer>
+                <div className="text-xs text-muted-foreground">
+                  Market cap changes over time
+                </div>
               </div>
-              <ChartContainer config={{ value: { label: 'Market Cap', color: '#22c55e' } }} className="h-16">
-                <AreaChart data={marketCapData}>
-                  <Area 
-                    type="monotone" 
-                    dataKey="value" 
-                    stroke="#22c55e" 
-                    fill="#22c55e" 
-                    fillOpacity={0.2}
-                    strokeWidth={1}
-                  />
-                </AreaChart>
-              </ChartContainer>
             </CardContent>
           </Card>
 
           {/* Volume card with chart */}
-          <Card>
+          <Card className="h-[200px]">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm">24h Volume</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-xl font-bold">$2.1T</div>
-              <div className="text-green-600 text-xs flex items-center mb-2">
-                <ArrowUp className="w-3 h-3 mr-1" />
-                5.4% (24h)
+              <div className="space-y-2">
+                <div className="text-2xl font-bold">$147.89B</div>
+                <div className="text-green-600 text-sm flex items-center">
+                  <TrendingUp className="w-3 h-3 mr-1" />
+                  14.10% (24h)
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Total trading volume across all exchanges
+                </div>
+                <ChartContainer config={{ value: { label: 'Volume', color: '#22c55e' } }} className="h-16 mt-2">
+                  <AreaChart data={volumeData}>
+                    <Area 
+                      type="monotone" 
+                      dataKey="value" 
+                      stroke="#22c55e" 
+                      fill="#22c55e" 
+                      fillOpacity={0.2}
+                      strokeWidth={1}
+                    />
+                  </AreaChart>
+                </ChartContainer>
+                <div className="text-xs text-muted-foreground">
+                  Trading activity increasing
+                </div>
               </div>
-              <ChartContainer config={{ value: { label: 'Volume', color: '#3b82f6' } }} className="h-16">
-                <AreaChart data={volumeData}>
-                  <Area 
-                    type="monotone" 
-                    dataKey="value" 
-                    stroke="#3b82f6" 
-                    fill="#3b82f6" 
-                    fillOpacity={0.2}
-                    strokeWidth={1}
-                  />
-                </AreaChart>
-              </ChartContainer>
             </CardContent>
           </Card>
 
           {/* Fear & Greed card */}
-          <Card>
+          <Card className="h-[200px]">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Market Sentiment</CardTitle>
+              <CardTitle className="text-sm">Fear & Greed</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-center">
-                <div className="text-xl font-bold">72</div>
-                <div className="text-xs text-green-600 mb-2">Greed</div>
-                <div className="w-12 h-12 rounded-full border-3 border-green-500 mx-auto flex items-center justify-center">
-                  <div className="text-xs font-medium">72</div>
+              <div className="text-center space-y-2">
+                <div className="text-2xl font-bold">61</div>
+                <div className="text-sm text-orange-600 font-medium">Greed</div>
+                <div className="relative w-16 h-16 mx-auto">
+                  <svg className="w-16 h-16 transform -rotate-90" viewBox="0 0 36 36">
+                    <path
+                      d="M18 2.0845
+                        a 15.9155 15.9155 0 0 1 0 31.831
+                        a 15.9155 15.9155 0 0 1 0 -31.831"
+                      fill="none"
+                      stroke="#e5e7eb"
+                      strokeWidth="2"
+                    />
+                    <path
+                      d="M18 2.0845
+                        a 15.9155 15.9155 0 0 1 0 31.831
+                        a 15.9155 15.9155 0 0 1 0 -31.831"
+                      fill="none"
+                      stroke="#f97316"
+                      strokeWidth="2"
+                      strokeDasharray="61, 100"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-sm font-medium">61</span>
+                  </div>
                 </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  Based on volatility, momentum, and volume
+                <div className="text-xs text-muted-foreground">
+                  Based on volatility, momentum, volume, and social sentiment
                 </div>
               </div>
             </CardContent>
