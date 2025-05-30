@@ -1,4 +1,3 @@
-
 import { Stock, MarketNews } from '../types';
 
 // Multiple free APIs for redundancy
@@ -195,7 +194,8 @@ class YahooFinanceService {
     }
     lastRequestTime = Date.now();
     
-    const apis = [tryYahooFinance];
+    // Add backup APIs to the array
+    const apis = [tryYahooFinance, tryFinnhub, tryAlphaVantage];
     
     for (const apiCall of apis) {
       try {
