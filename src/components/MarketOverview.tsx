@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -6,12 +5,14 @@ import { StockCard } from './StockCard';
 import { yahooFinanceService } from '../services/yahooFinanceService';
 import { Stock, MarketNews } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { TrendingUp, TrendingDown, Globe, Clock, Plus, AlertCircle, ArrowUp, ArrowDown, Activity, BarChart3, Star, Target, ShieldCheck, Settings, Filter, Download, Zap, Flame, Skull, List, Eye } from 'lucide-react';
+import { TrendingUp, TrendingDown, Globe, Clock, Plus, AlertCircle, ArrowUp, ArrowDown, Activity, BarChart3, Star, Target, ShieldCheck, Settings, Filter, Download, Zap, Flame, Skull, List, Eye, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
 
 // Sample chart data
 const marketCapData = [
@@ -137,6 +138,9 @@ export const MarketOverview: React.FC = () => {
   const [sortOrder, setSortOrder] = useState('desc');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showWatchlistModal, setShowWatchlistModal] = useState(false);
+  const [showCustomizeModal, setShowCustomizeModal] = useState(false);
+  const [rowsToShow, setRowsToShow] = useState(100);
   const { addStockToWatchlist, watchlists, isAuthenticated, loadWatchlists } = useAuth();
 
   useEffect(() => {
@@ -260,6 +264,55 @@ export const MarketOverview: React.FC = () => {
     setFilteredStocks(sorted);
   };
 
+  const exportToCSV = () => {
+    const headers = ['Rank', 'Symbol', 'Name', 'Price', '1h %', '24h %', '7d %', 'Market Cap', 'Volume'];
+    const csvContent = [
+      headers.join(','),
+      ...filteredStocks.slice(0, rowsToShow).map((stock, index) => [
+        index + 1,
+        stock.symbol,
+        `"${stock.name}"`,
+        stock.price.toFixed(2),
+        stock.changePercent.toFixed(2),
+        stock.changePercent.toFixed(2),
+        stock.changePercent.toFixed(2),
+        stock.marketCap ? (stock.marketCap / 1000000000).toFixed(1) + 'B' : 'N/A',
+        stock.volume ? (stock.volume / 1000000).toFixed(1) + 'M' : 'N/A'
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'market_data.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Market data exported to CSV');
+  };
+
+  const availableColumns = [
+    { id: 'rank', label: '#', checked: tableColumns.includes('rank') },
+    { id: 'name', label: 'Name', checked: tableColumns.includes('name') },
+    { id: 'price', label: 'Price', checked: tableColumns.includes('price') },
+    { id: '1h', label: '1h %', checked: tableColumns.includes('1h') },
+    { id: '24h', label: '24h %', checked: tableColumns.includes('24h') },
+    { id: '7d', label: '7d %', checked: tableColumns.includes('7d') },
+    { id: 'marketCap', label: 'Market Cap', checked: tableColumns.includes('marketCap') },
+    { id: 'volume', label: 'Volume(24h)', checked: tableColumns.includes('volume') },
+    { id: 'chart', label: 'Last 7 Days', checked: tableColumns.includes('chart') }
+  ];
+
+  const handleColumnToggle = (columnId: string) => {
+    setTableColumns(prev => 
+      prev.includes(columnId) 
+        ? prev.filter(col => col !== columnId)
+        : [...prev, columnId]
+    );
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -297,9 +350,9 @@ export const MarketOverview: React.FC = () => {
 
   return (
     <div className="space-y-6 bg-background min-h-screen">
-      {/* Market Stats Header - Similar to CoinMarketCap */}
+      {/* Market Stats Header */}
       <div className="bg-muted/30 border-b">
-        <div className="container mx-auto px-6 py-4">
+        <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex flex-wrap items-center gap-6 text-sm">
             <div className="flex items-center space-x-2">
               <span className="text-muted-foreground">Stocks:</span>
@@ -328,7 +381,7 @@ export const MarketOverview: React.FC = () => {
         </div>
       </div>
 
-      <div className="container mx-auto px-6 py-6">
+      <div className="max-w-7xl mx-auto px-6 py-6">
         {/* Top Statistics - Horizontal Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
           {/* My Watchlist - Only show if authenticated */}
@@ -339,9 +392,42 @@ export const MarketOverview: React.FC = () => {
                   <List className="w-5 h-5 mr-2 text-blue-500" />
                   My Watchlist
                 </h3>
-                <Button variant="ghost" size="sm">
-                  <Eye className="w-4 h-4" />
-                </Button>
+                <Dialog open={showWatchlistModal} onOpenChange={setShowWatchlistModal}>
+                  <DialogTrigger asChild>
+                    <Button variant="ghost" size="sm">
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>My Watchlist</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-3 max-h-96 overflow-y-auto">
+                      {displayWatchlistStocks.map((stock, index) => (
+                        <div key={stock.symbol} className="flex items-center justify-between p-3 border rounded">
+                          <div className="flex items-center space-x-3">
+                            <span className="text-sm text-muted-foreground w-6">{index + 1}</span>
+                            <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-sm font-medium">
+                              {stock.symbol.slice(0, 2)}
+                            </div>
+                            <div>
+                              <div className="font-medium">{stock.symbol}</div>
+                              <div className="text-sm text-muted-foreground">${stock.price.toFixed(2)}</div>
+                            </div>
+                          </div>
+                          <div className={`text-sm font-medium ${stock.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {stock.changePercent >= 0 ? '+' : ''}{stock.changePercent.toFixed(2)}%
+                          </div>
+                        </div>
+                      ))}
+                      {displayWatchlistStocks.length === 0 && (
+                        <div className="text-center text-muted-foreground py-8">
+                          No stocks in watchlist
+                        </div>
+                      )}
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
               <div className="space-y-3">
                 {displayWatchlistStocks.slice(0, 3).map((stock, index) => (
@@ -512,11 +598,59 @@ export const MarketOverview: React.FC = () => {
                 <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
                 <span>LIVE - {new Date().toLocaleTimeString()}</span>
               </div>
-              <Button variant="outline" size="sm">
-                <Settings className="w-4 h-4 mr-2" />
-                Customize
-              </Button>
-              <Button variant="outline" size="sm">
+              <Dialog open={showCustomizeModal} onOpenChange={setShowCustomizeModal}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Settings className="w-4 h-4 mr-2" />
+                    Customize
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Choose up to 7/12 metrics</DialogTitle>
+                    <p className="text-sm text-muted-foreground">Add, delete and sort metrics just how you need it</p>
+                  </DialogHeader>
+                  <div className="space-y-6">
+                    <div>
+                      <h4 className="font-medium mb-3">Columns</h4>
+                      <div className="grid grid-cols-3 gap-3">
+                        {availableColumns.map((column) => (
+                          <div key={column.id} className="flex items-center space-x-2">
+                            <Checkbox
+                              checked={column.checked}
+                              onCheckedChange={() => handleColumnToggle(column.id)}
+                            />
+                            <label className="text-sm">{column.label}</label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="font-medium mb-3">Rows to show</h4>
+                      <Select value={rowsToShow.toString()} onValueChange={(value) => setRowsToShow(Number(value))}>
+                        <SelectTrigger className="w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="100">Show 100</SelectItem>
+                          <SelectItem value="200">Show 200</SelectItem>
+                          <SelectItem value="500">Show 500</SelectItem>
+                          <SelectItem value="1000">Show All</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex justify-end space-x-3">
+                      <Button variant="outline" onClick={() => setShowCustomizeModal(false)}>
+                        Cancel
+                      </Button>
+                      <Button onClick={() => setShowCustomizeModal(false)}>
+                        Apply Changes
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+              <Button variant="outline" size="sm" onClick={exportToCSV}>
                 <Download className="w-4 h-4 mr-2" />
                 Export
               </Button>
@@ -601,11 +735,11 @@ export const MarketOverview: React.FC = () => {
                             </td>
                             <td className="p-4">
                               <div className="flex items-center space-x-3">
-                                <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-sm font-medium">
+                                <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-xs font-medium">
                                   {stock.symbol.slice(0, 2)}
                                 </div>
                                 <div>
-                                  <div className="font-semibold">{stock.symbol}</div>
+                                  <div className="font-medium text-sm">{stock.symbol}</div>
                                   <div className="text-sm text-muted-foreground truncate max-w-32">
                                     {stock.name}
                                   </div>
