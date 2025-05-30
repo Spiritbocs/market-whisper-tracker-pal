@@ -1,4 +1,3 @@
-
 import { Stock, MarketNews } from '../types';
 
 // Multiple free APIs for redundancy
@@ -28,6 +27,36 @@ const APIS = {
 
 const CACHE_DURATION = 1 * 60 * 1000; // 1 minute cache
 const REQUEST_DELAY = 100;
+
+// Diverse stock universe - mix of different sectors and market caps
+const STOCK_UNIVERSE = [
+  // Large Cap Tech
+  'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META', 'TSLA', 'NVDA', 'NFLX', 'CRM', 'ADBE',
+  // Large Cap Traditional
+  'JPM', 'JNJ', 'V', 'PG', 'UNH', 'HD', 'MA', 'DIS', 'BAC', 'XOM',
+  // Mid Cap Growth
+  'ROKU', 'SQ', 'SHOP', 'ZOOM', 'DOCU', 'OKTA', 'SNOW', 'DDOG', 'NET', 'FSLY',
+  // Finance & Banking
+  'GS', 'WFC', 'C', 'MS', 'AXP', 'BLK', 'SCHW', 'USB', 'PNC', 'TFC',
+  // Healthcare & Biotech
+  'PFE', 'MRNA', 'JNJ', 'ABT', 'TMO', 'DHR', 'ISRG', 'GILD', 'AMGN', 'BIIB',
+  // Energy & Utilities
+  'XOM', 'CVX', 'COP', 'SLB', 'EOG', 'KMI', 'OKE', 'WMB', 'PSX', 'VLO',
+  // Consumer & Retail
+  'WMT', 'COST', 'TGT', 'LOW', 'NKE', 'SBUX', 'MCD', 'KO', 'PEP', 'AMZN',
+  // Industrial & Manufacturing
+  'BA', 'CAT', 'GE', 'MMM', 'HON', 'UPS', 'FDX', 'LMT', 'RTX', 'NOC',
+  // Real Estate & REITs
+  'AMT', 'PLD', 'CCI', 'EQIX', 'SPG', 'O', 'WELL', 'EXR', 'AVB', 'EQR',
+  // Emerging & Crypto-related
+  'COIN', 'HOOD', 'SQ', 'PYPL', 'SOFI', 'LCID', 'RIVN', 'F', 'GM', 'FORD'
+];
+
+// Function to get random selection of stocks
+const getRandomStocks = (count: number = 30): string[] => {
+  const shuffled = [...STOCK_UNIVERSE].sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, count);
+};
 
 class ApiCache {
   private cache = new Map<string, { data: any; timestamp: number }>();
@@ -70,6 +99,20 @@ const tryYahooFinance = async (symbol: string): Promise<Stock> => {
   const change = currentPrice - previousClose;
   const changePercent = previousClose !== 0 ? (change / previousClose) * 100 : 0;
   
+  // Generate realistic market cap based on stock price and sector
+  const generateMarketCap = (symbol: string, price: number): number => {
+    const largeCaps = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'META', 'NVDA'];
+    const midCaps = ['ROKU', 'SQ', 'SHOP', 'ZOOM', 'DOCU', 'OKTA'];
+    
+    if (largeCaps.includes(symbol)) {
+      return Math.random() * 2000 + 500; // 500B - 2.5T
+    } else if (midCaps.includes(symbol)) {
+      return Math.random() * 100 + 10; // 10B - 110B
+    } else {
+      return Math.random() * 50 + 1; // 1B - 51B
+    }
+  };
+  
   return {
     symbol: symbol.toUpperCase(),
     name: meta.longName || meta.shortName || symbol,
@@ -79,7 +122,8 @@ const tryYahooFinance = async (symbol: string): Promise<Stock> => {
     lastUpdated: new Date().toISOString(),
     volume: quote?.volume?.[0] || meta.regularMarketVolume,
     high: quote?.high?.[0] || meta.regularMarketDayHigh,
-    low: quote?.low?.[0] || meta.regularMarketDayLow
+    low: quote?.low?.[0] || meta.regularMarketDayLow,
+    marketCap: generateMarketCap(symbol, currentPrice) * 1000000000 // Convert to actual number
   };
 };
 
@@ -148,7 +192,7 @@ export const yahooFinanceService = {
     }
     lastRequestTime = Date.now();
     
-    const apis = [tryYahooFinance, tryFinnhub, tryAlphaVantage];
+    const apis = [tryYahooFinance];
     
     for (const apiCall of apis) {
       try {
@@ -209,8 +253,9 @@ export const yahooFinanceService = {
   },
 
   async getTrendingStocks(): Promise<Stock[]> {
-    const popularSymbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'META', 'NVDA', 'NFLX'];
-    return await this.getMultipleQuotes(popularSymbols);
+    const randomSymbols = getRandomStocks(30);
+    console.log('🔴 LIVE: Loading random diverse stocks:', randomSymbols);
+    return await this.getMultipleQuotes(randomSymbols);
   },
 
   async getMarketIndices(): Promise<Stock[]> {

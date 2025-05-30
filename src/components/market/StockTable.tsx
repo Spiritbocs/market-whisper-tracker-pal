@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Star, Flame, TrendingUp, ArrowUp, ArrowDown, TrendingDown, Skull, ShieldCheck, Target } from 'lucide-react';
+import { Star, Flame, TrendingUp, ArrowUp, ArrowDown, TrendingDown, Skull } from 'lucide-react';
 import { Stock } from '../../types';
 
 interface StockTableProps {
@@ -10,6 +10,7 @@ interface StockTableProps {
   sortBy: string;
   sortOrder: string;
   onSort: (column: string) => void;
+  tableColumns: string[];
 }
 
 const getPerformanceIndicator = (changePercent: number) => {
@@ -58,6 +59,7 @@ export const StockTable: React.FC<StockTableProps> = ({
   sortBy,
   sortOrder,
   onSort,
+  tableColumns,
 }) => {
   return (
     <Card className="w-full">
@@ -66,25 +68,43 @@ export const StockTable: React.FC<StockTableProps> = ({
           <table className="w-full min-w-full">
             <thead className="bg-muted/50 border-b">
               <tr className="text-sm text-muted-foreground">
-                <th className="text-left p-4 font-medium">#</th>
-                <th className="text-left p-4 font-medium cursor-pointer hover:text-foreground" onClick={() => onSort('name')}>
-                  Name {sortBy === 'name' && (sortOrder === 'desc' ? '↓' : '↑')}
-                </th>
-                <th className="text-right p-4 font-medium cursor-pointer hover:text-foreground" onClick={() => onSort('price')}>
-                  Price {sortBy === 'price' && (sortOrder === 'desc' ? '↓' : '↑')}
-                </th>
-                <th className="text-right p-4 font-medium">1h %</th>
-                <th className="text-right p-4 font-medium cursor-pointer hover:text-foreground" onClick={() => onSort('change')}>
-                  24h % {sortBy === 'change' && (sortOrder === 'desc' ? '↓' : '↑')}
-                </th>
-                <th className="text-right p-4 font-medium">7d %</th>
-                <th className="text-right p-4 font-medium cursor-pointer hover:text-foreground" onClick={() => onSort('marketCap')}>
-                  Market Cap {sortBy === 'marketCap' && (sortOrder === 'desc' ? '↓' : '↑')}
-                </th>
-                <th className="text-right p-4 font-medium cursor-pointer hover:text-foreground" onClick={() => onSort('volume')}>
-                  Volume(24h) {sortBy === 'volume' && (sortOrder === 'desc' ? '↓' : '↑')}
-                </th>
-                <th className="text-right p-4 font-medium">Last 7 Days</th>
+                {tableColumns.includes('rank') && (
+                  <th className="text-left p-4 font-medium">#</th>
+                )}
+                {tableColumns.includes('name') && (
+                  <th className="text-left p-4 font-medium cursor-pointer hover:text-foreground" onClick={() => onSort('name')}>
+                    Name {sortBy === 'name' && (sortOrder === 'desc' ? '↓' : '↑')}
+                  </th>
+                )}
+                {tableColumns.includes('price') && (
+                  <th className="text-right p-4 font-medium cursor-pointer hover:text-foreground" onClick={() => onSort('price')}>
+                    Price {sortBy === 'price' && (sortOrder === 'desc' ? '↓' : '↑')}
+                  </th>
+                )}
+                {tableColumns.includes('1h') && (
+                  <th className="text-right p-4 font-medium">1h %</th>
+                )}
+                {tableColumns.includes('24h') && (
+                  <th className="text-right p-4 font-medium cursor-pointer hover:text-foreground" onClick={() => onSort('change')}>
+                    24h % {sortBy === 'change' && (sortOrder === 'desc' ? '↓' : '↑')}
+                  </th>
+                )}
+                {tableColumns.includes('7d') && (
+                  <th className="text-right p-4 font-medium">7d %</th>
+                )}
+                {tableColumns.includes('marketCap') && (
+                  <th className="text-right p-4 font-medium cursor-pointer hover:text-foreground" onClick={() => onSort('marketCap')}>
+                    Market Cap {sortBy === 'marketCap' && (sortOrder === 'desc' ? '↓' : '↑')}
+                  </th>
+                )}
+                {tableColumns.includes('volume') && (
+                  <th className="text-right p-4 font-medium cursor-pointer hover:text-foreground" onClick={() => onSort('volume')}>
+                    Volume(24h) {sortBy === 'volume' && (sortOrder === 'desc' ? '↓' : '↑')}
+                  </th>
+                )}
+                {tableColumns.includes('chart') && (
+                  <th className="text-right p-4 font-medium">Last 7 Days</th>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -94,60 +114,78 @@ export const StockTable: React.FC<StockTableProps> = ({
                 
                 return (
                   <tr key={stock.symbol} className="border-b hover:bg-muted/30 transition-colors">
-                    <td className="p-4">
-                      <div className="flex items-center space-x-2">
-                        <Star className="w-4 h-4 text-muted-foreground hover:text-yellow-500 cursor-pointer" />
-                        <span className="font-medium">{index + 1}</span>
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-xs font-medium">
-                          {stock.symbol.slice(0, 2)}
+                    {tableColumns.includes('rank') && (
+                      <td className="p-4">
+                        <div className="flex items-center space-x-2">
+                          <Star className="w-4 h-4 text-muted-foreground hover:text-yellow-500 cursor-pointer" />
+                          <span className="font-medium">{index + 1}</span>
                         </div>
-                        <div>
-                          <div className="font-medium text-sm">{stock.symbol}</div>
-                          <div className="text-sm text-muted-foreground truncate max-w-32">
-                            {stock.name}
+                      </td>
+                    )}
+                    {tableColumns.includes('name') && (
+                      <td className="p-4">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-xs font-medium">
+                            {stock.symbol.slice(0, 2)}
+                          </div>
+                          <div>
+                            <div className="font-medium text-sm">{stock.symbol}</div>
+                            <div className="text-sm text-muted-foreground truncate max-w-32">
+                              {stock.name}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="text-right p-4">
-                      <div className="font-semibold">${stock.price.toFixed(2)}</div>
-                    </td>
-                    <td className={`text-right p-4 ${stock.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      <div className="flex items-center justify-end">
-                        {stock.changePercent >= 0 ? '↗' : '↘'}
-                        <span className="ml-1">{Math.abs(stock.changePercent).toFixed(2)}%</span>
-                      </div>
-                    </td>
-                    <td className={`text-right p-4 ${stock.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      <div className="flex items-center justify-end">
-                        {stock.changePercent >= 0 ? '↗' : '↘'}
-                        <span className="ml-1">{Math.abs(stock.changePercent).toFixed(2)}%</span>
-                      </div>
-                    </td>
-                    <td className={`text-right p-4 ${stock.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      <div className="flex items-center justify-end">
-                        {stock.changePercent >= 0 ? '↗' : '↘'}
-                        <span className="ml-1">{Math.abs(stock.changePercent).toFixed(2)}%</span>
-                      </div>
-                    </td>
-                    <td className="text-right p-4 text-muted-foreground">
-                      {stock.marketCap ? `$${(stock.marketCap / 1000000000).toFixed(1)}B` : 'N/A'}
-                    </td>
-                    <td className="text-right p-4 text-muted-foreground">
-                      {stock.volume ? `$${(stock.volume / 1000000).toFixed(1)}M` : 'N/A'}
-                    </td>
-                    <td className="text-right p-4">
-                      <div className="flex items-center justify-end space-x-2">
-                        <PerformanceIcon className={`w-4 h-4 ${performance.color}`} />
-                        <span className={`text-sm font-medium ${performance.color}`}>
-                          {performance.text}
-                        </span>
-                      </div>
-                    </td>
+                      </td>
+                    )}
+                    {tableColumns.includes('price') && (
+                      <td className="text-right p-4">
+                        <div className="font-semibold">${stock.price.toFixed(2)}</div>
+                      </td>
+                    )}
+                    {tableColumns.includes('1h') && (
+                      <td className={`text-right p-4 ${stock.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        <div className="flex items-center justify-end">
+                          {stock.changePercent >= 0 ? '↗' : '↘'}
+                          <span className="ml-1">{Math.abs(stock.changePercent).toFixed(2)}%</span>
+                        </div>
+                      </td>
+                    )}
+                    {tableColumns.includes('24h') && (
+                      <td className={`text-right p-4 ${stock.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        <div className="flex items-center justify-end">
+                          {stock.changePercent >= 0 ? '↗' : '↘'}
+                          <span className="ml-1">{Math.abs(stock.changePercent).toFixed(2)}%</span>
+                        </div>
+                      </td>
+                    )}
+                    {tableColumns.includes('7d') && (
+                      <td className={`text-right p-4 ${stock.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        <div className="flex items-center justify-end">
+                          {stock.changePercent >= 0 ? '↗' : '↘'}
+                          <span className="ml-1">{Math.abs(stock.changePercent).toFixed(2)}%</span>
+                        </div>
+                      </td>
+                    )}
+                    {tableColumns.includes('marketCap') && (
+                      <td className="text-right p-4 text-muted-foreground">
+                        {stock.marketCap ? `$${(stock.marketCap / 1000000000).toFixed(1)}B` : 'N/A'}
+                      </td>
+                    )}
+                    {tableColumns.includes('volume') && (
+                      <td className="text-right p-4 text-muted-foreground">
+                        {stock.volume ? `$${(stock.volume / 1000000).toFixed(1)}M` : 'N/A'}
+                      </td>
+                    )}
+                    {tableColumns.includes('chart') && (
+                      <td className="text-right p-4">
+                        <div className="flex items-center justify-end space-x-2">
+                          <PerformanceIcon className={`w-4 h-4 ${performance.color}`} />
+                          <span className={`text-sm font-medium ${performance.color}`}>
+                            {performance.text}
+                          </span>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 );
               })}

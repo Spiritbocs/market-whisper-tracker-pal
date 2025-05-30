@@ -64,7 +64,7 @@ export const MarketFilters: React.FC<MarketFiltersProps> = ({
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
-                <DialogTitle>Choose up to 7/12 metrics</DialogTitle>
+                <DialogTitle>Choose up to 7/9 metrics</DialogTitle>
                 <p className="text-sm text-muted-foreground">Add, delete and sort metrics just how you need it</p>
               </DialogHeader>
               <div className="space-y-6">
@@ -89,10 +89,10 @@ export const MarketFilters: React.FC<MarketFiltersProps> = ({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="100">Show 100</SelectItem>
-                      <SelectItem value="200">Show 200</SelectItem>
-                      <SelectItem value="500">Show 500</SelectItem>
-                      <SelectItem value="1000">Show All</SelectItem>
+                      <SelectItem value="8">Show 8</SelectItem>
+                      <SelectItem value="16">Show 16</SelectItem>
+                      <SelectItem value="24">Show 24</SelectItem>
+                      <SelectItem value="30">Show 30</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

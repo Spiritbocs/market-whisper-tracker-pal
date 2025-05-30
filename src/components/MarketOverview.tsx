@@ -46,7 +46,7 @@ export const MarketOverview: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showWatchlistModal, setShowWatchlistModal] = useState(false);
   const [showCustomizeModal, setShowCustomizeModal] = useState(false);
-  const [rowsToShow, setRowsToShow] = useState(100);
+  const [rowsToShow, setRowsToShow] = useState(8);
   const { addStockToWatchlist, watchlists, isAuthenticated, loadWatchlists } = useAuth();
 
   useEffect(() => {
@@ -214,6 +214,7 @@ export const MarketOverview: React.FC = () => {
               sortBy={sortBy}
               sortOrder={sortOrder}
               onSort={handleSort}
+              tableColumns={tableColumns}
             />
           )}
         </div>
