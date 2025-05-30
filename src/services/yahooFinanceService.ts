@@ -47,7 +47,7 @@ const STOCK_UNIVERSE = [
   // Industrial & Manufacturing
   'BA', 'CAT', 'GE', 'MMM', 'HON', 'UPS', 'FDX', 'LMT', 'RTX', 'NOC',
   // Real Estate & REITs
-  'AMT', 'PLD', 'CCI', 'EQIX', 'SPG', 'O', 'WELL', 'EXR', 'AVB', 'EQR',
+  'AMT', 'PLD', 'CCI', 'EQIX', 'SPG', 'O', 'WELL', 'AVB', 'EQR',
   // Emerging & Crypto-related
   'COIN', 'HOOD', 'SQ', 'PYPL', 'SOFI', 'LCID', 'RIVN', 'F', 'GM', 'FORD'
 ];
@@ -223,6 +223,8 @@ class YahooFinanceService {
         stocks.push(stock);
       } catch (error) {
         console.error(`Failed to get live data for ${symbol}:`, error);
+        // Continue with other symbols instead of failing completely
+        continue;
       }
     }
     
@@ -261,7 +263,7 @@ class YahooFinanceService {
       
       // Load more stocks to ensure we have enough after filtering
       const shuffled = [...this.stockUniverse].sort(() => 0.5 - Math.random());
-      const selectedSymbols = shuffled.slice(0, 100); // Increased from 30 to 100
+      const selectedSymbols = shuffled.slice(0, 30); // Reduced from 100 to 30 to minimize API load
       
       console.log('🔴 LIVE: Fetching real data for', selectedSymbols.length, 'symbols...');
       
@@ -275,12 +277,26 @@ class YahooFinanceService {
         typeof stock.changePercent === 'number'
       );
       
-      console.log(`🔴 LIVE: Successfully loaded ${validStocks.length}/${selectedSymbols.length} stocks`);
+      // If we don't have enough valid stocks, try another batch
+      if (validStocks.length < 10) {
+        console.log('Not enough valid stocks, trying another batch...');
+        const remainingSymbols = shuffled.slice(30, 60);
+        const additionalStocks = await this.getMultipleQuotes(remainingSymbols);
+        validStocks.push(...additionalStocks.filter(stock => 
+          stock && 
+          typeof stock.price === 'number' && 
+          stock.price > 0 &&
+          typeof stock.changePercent === 'number'
+        ));
+      }
+      
+      console.log(`🔴 LIVE: Successfully loaded ${validStocks.length} valid stocks`);
       
       return validStocks;
     } catch (error) {
       console.error('Failed to fetch trending stocks:', error);
-      throw error;
+      // Return any valid stocks we have instead of throwing
+      return [];
     }
   }
 
