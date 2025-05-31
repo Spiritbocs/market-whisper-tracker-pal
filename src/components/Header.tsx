@@ -19,7 +19,7 @@ export const Header: React.FC = () => {
   return (
     <>
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-3 w-full">
+        <div className="w-full px-4 py-3 max-w-screen-2xl mx-auto">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
