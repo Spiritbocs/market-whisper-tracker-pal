@@ -9,45 +9,27 @@ This document provides guidelines for contributing to the project. Please read i
 
 ## 📜 Table of Contents
 
--   [Ways to Contribute](#ways-to-contribute-%F0%9F%A4%9D "null")
-    
--   [Getting Started](#getting-started-%F0%9F%9A%80 "null")
-    
-    -   [Prerequisites](#prerequisites-%F0%9F%9B%A0%EF%B8%8F "null")
-        
-    -   [Fork & Clone](#fork--clone-%F0%9F%8D%B4 "null")
-        
-    -   [Installation](#installation-%E2%9A%99%EF%B8%8F "null")
-        
-    -   [Running the Application](#running-the-application-%E1%88%89%E1%8C%A3%E1%8B%AB "null")
-        
--   [Development Workflow](#development-workflow-%F0%9F%94%84 "null")
-    
-    -   [Branching Strategy](#branching-strategy-%F0%9F%8C%BF "null")
-        
-    -   [Making Changes](#making-changes-%F0%9F%92%BB "null")
-        
-    -   [Commit Guidelines](#commit-guidelines-%F0%9F%92%AC "null")
-        
-    -   [Testing](#testing-%F0%9F%A7%AA "null")
-        
--   [Submitting Contributions](#submitting-contributions-%F0%9F%93%AC "null")
-    
-    -   [Pull](#pull-request-process-%F0%9F%93%AA "null") Request Process
-        
--   [Issue Tracking](#issue-tracking-%F0%9F%8E%AF "null")
-    
-    -   [Reporting Bugs](#reporting-bugs-%F0%9F%90%9B "null")
-        
-    -   [Suggesting Enhancements](#suggesting-enhancements-%E2%9C%A8 "null")
-        
--   [Coding Guidelines](#coding-guidelines-%F0%9F%93%8F "null")
-    
--   [Code of Conduct](#code-of-conduct-%F0%9F%A4%9D "null")
-    
--   [Need Help?](#need-help-%E2%9D%93 "null")
-    
--   [Recognition](#recognition-%F0%9F%8E%89 "null")
+- [Ways to Contribute](#ways-to-contribute)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Fork & Clone](#fork--clone)
+  - [Installation](#installation)
+  - [Running the Application](#running-the-application)
+- [Development Workflow](#development-workflow)
+  - [Branching Strategy](#branching-strategy)
+  - [Making Changes](#making-changes)
+  - [Commit Guidelines](#commit-guidelines)
+  - [Testing](#testing)
+- [Submitting Contributions](#submitting-contributions)
+  - [Pull Request Process](#pull-request-process)
+- [Issue Tracking](#issue-tracking)
+  - [Reporting Bugs](#reporting-bugs)
+  - [Suggesting Enhancements](#suggesting-enhancements)
+- [Coding Guidelines](#coding-guidelines)
+- [Code of Conduct](#code-of-conduct)
+- [Need Help?](#need-help)
+- [Recognition](#recognition)
+
     
 
 ## Ways to Contribute 🤝
