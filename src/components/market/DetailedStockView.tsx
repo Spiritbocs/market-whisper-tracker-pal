@@ -45,8 +45,9 @@ export const DetailedStockView: React.FC<DetailedStockViewProps> = ({
 
     try {
       await addStockToWatchlist(selectedWatchlist, stock.symbol);
-      toast.success(`${stock.symbol} added to watchlist`);
+      toast.success(`${stock.symbol} added to watchlist successfully`);
     } catch (error) {
+      console.error('Error adding stock to watchlist:', error);
       toast.error('Failed to add stock to watchlist');
     }
   };
@@ -102,6 +103,7 @@ export const DetailedStockView: React.FC<DetailedStockViewProps> = ({
 
         {isAuthenticated && watchlists.length > 0 && (
           <div className="flex items-center space-x-2">
+            <span className="text-sm text-muted-foreground">Add to:</span>
             <Select value={selectedWatchlist} onValueChange={setSelectedWatchlist}>
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="Select watchlist" />
@@ -109,7 +111,7 @@ export const DetailedStockView: React.FC<DetailedStockViewProps> = ({
               <SelectContent>
                 {watchlists.map((watchlist) => (
                   <SelectItem key={watchlist.id} value={watchlist.id}>
-                    {watchlist.name}
+                    {watchlist.name} {watchlist.is_default && '(Default)'}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -117,6 +119,14 @@ export const DetailedStockView: React.FC<DetailedStockViewProps> = ({
           </div>
         )}
       </div>
+
+      {!isAuthenticated && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <p className="text-blue-800">
+            Sign in to add stocks to your watchlists and track your favorite investments.
+          </p>
+        </div>
+      )}
 
       <div className="grid gap-6">
         {selectedStocks.map((stock) => {
@@ -137,14 +147,15 @@ export const DetailedStockView: React.FC<DetailedStockViewProps> = ({
                     </div>
                   </div>
                   <div className="flex items-center space-x-3">
-                    {isAuthenticated && (
+                    {isAuthenticated && watchlists.length > 0 && (
                       <Button
                         size="sm"
                         onClick={() => handleAddToWatchlist(stock)}
                         disabled={!selectedWatchlist}
+                        className="flex items-center space-x-2"
                       >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add to Watchlist
+                        <Plus className="w-4 h-4" />
+                        <span>Add to Watchlist</span>
                       </Button>
                     )}
                     <Button
