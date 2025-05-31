@@ -209,6 +209,11 @@ We expect all contributors to adhere to our Code of Conduct. Be kind, respectful
 
 ----------
 
+
 ## Recognition 🎉
 
 We recognize and appreciate all contributions. Top contributors will be listed in our README and documentation.
+
+
+<img src="https://github.com/user-attachments/assets/bb96ab21-306e-40e2-8a32-2d65810b5605" alt="bmc_qr" width="185" />
+
