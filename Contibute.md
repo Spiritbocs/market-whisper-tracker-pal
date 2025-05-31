@@ -11,30 +11,31 @@ This document provides guidelines for contributing to the project. Please read i
 
 ## 📜 Table of Contents
 
-- [Ways to Contribute](#ways-to-contribute)
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Fork & Clone](#fork--clone)
-  - [Installation](#installation)
-  - [Running the Application](#running-the-application)
-- [Development Workflow](#development-workflow)
-  - [Branching Strategy](#branching-strategy)
-  - [Making Changes](#making-changes)
-  - [Commit Guidelines](#commit-guidelines)
-  - [Testing](#testing-)
-- [Submitting Contributions](#submitting-contributions)
-  - [Pull Request Process](#pull-request-process)
-- [Issue Tracking](#issue-tracking)
-  - [Reporting Bugs](#reporting-bugs)
-  - [Suggesting Enhancements](#suggesting-enhancements)
-- [Coding Guidelines](#coding-guidelines)
-- [Code of Conduct](#code-of-conduct)
-- [Need Help?](#need-help)
-- [Recognition](#recognition)
+- [Ways to Contribute](#ways-to-contribute🤝)
+- [Getting Started](#getting-started-🚀)
+  - [Prerequisites](#prerequisites-🛠️)
+  - [Fork & Clone](#fork--clone-🍴)
+  - [Installation](#installation-⚙️)
+  - [Running the Application](#running-the-application-ሩጫ)
+- [Development Workflow](#development-workflow-🔄)
+  - [Branching Strategy](#branching-strategy-🌿)
+  - [Making Changes](#making-changes-💻)
+  - [Commit Guidelines](#commit-guidelines-💬)
+  - [Testing](#testing-🧪)
+- [Submitting Contributions](#submitting-contributions-📬)
+  - [Pull Request Process](#pull-request-process-📤)
+- [Issue Tracking](#issue-tracking-🎯)
+  - [Reporting Bugs](#reporting-bugs-🐛)
+  - [Suggesting Enhancements](#suggesting-enhancements-✨)
+- [Coding Guidelines](#coding-guidelines-📏)
+- [Code of Conduct](#code-of-conduct-🫡)
+- [Need Help?](#need-help-❓)
+- [Recognition](#recognition-🎉)
 
 ---
 
-## Ways to Contribute 🤝
+## Ways to Contribute🤝
+
 
 There are many ways you can contribute to Market Whisperer Tracker Pal:
 
