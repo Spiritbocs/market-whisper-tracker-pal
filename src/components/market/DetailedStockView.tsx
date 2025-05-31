@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Plus, TrendingUp, TrendingDown, DollarSign, BarChart3, Activity } from 'lucide-react';
+import { ArrowLeft, Plus, TrendingUp, TrendingDown, DollarSign, BarChart3, Activity, Check } from 'lucide-react';
 import { Stock, Watchlist } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'sonner';
@@ -32,6 +33,12 @@ export const DetailedStockView: React.FC<DetailedStockViewProps> = ({
     }
   }, [watchlists, isAuthenticated, selectedWatchlist]);
 
+  const isStockInWatchlist = (symbol: string): boolean => {
+    return watchlists.some(watchlist => 
+      watchlist.watchlist_stocks?.some(ws => ws.symbol === symbol)
+    );
+  };
+
   const handleAddToWatchlist = async (stock: Stock) => {
     if (!isAuthenticated) {
       toast.error('Please log in to add stocks to watchlist');
@@ -40,6 +47,11 @@ export const DetailedStockView: React.FC<DetailedStockViewProps> = ({
 
     if (!selectedWatchlist) {
       toast.error('Please select a watchlist first');
+      return;
+    }
+
+    if (isStockInWatchlist(stock.symbol)) {
+      toast.info(`${stock.symbol} is already in your watchlist`);
       return;
     }
 
@@ -132,6 +144,7 @@ export const DetailedStockView: React.FC<DetailedStockViewProps> = ({
         {selectedStocks.map((stock) => {
           const metrics = calculateMetrics(stock);
           const risk = getRiskLevel(metrics.beta);
+          const inWatchlist = isStockInWatchlist(stock.symbol);
 
           return (
             <Card key={stock.symbol} className="overflow-hidden">
@@ -151,11 +164,25 @@ export const DetailedStockView: React.FC<DetailedStockViewProps> = ({
                       <Button
                         size="sm"
                         onClick={() => handleAddToWatchlist(stock)}
-                        disabled={!selectedWatchlist}
-                        className="flex items-center space-x-2"
+                        disabled={!selectedWatchlist || inWatchlist}
+                        className={`flex items-center space-x-2 ${
+                          inWatchlist 
+                            ? 'bg-green-600 hover:bg-green-700 text-white' 
+                            : ''
+                        }`}
+                        variant={inWatchlist ? 'default' : 'outline'}
                       >
-                        <Plus className="w-4 h-4" />
-                        <span>Add to Watchlist</span>
+                        {inWatchlist ? (
+                          <>
+                            <Check className="w-4 h-4" />
+                            <span>In Watchlist</span>
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="w-4 h-4" />
+                            <span>Add to Watchlist</span>
+                          </>
+                        )}
                       </Button>
                     )}
                     <Button

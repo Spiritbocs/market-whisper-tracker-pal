@@ -77,6 +77,18 @@ export const useMarketData = () => {
     setFilteredStocks(sorted);
   };
 
+  // Real-time updates every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (trendingStocks.length > 0) {
+        console.log('🔄 Auto-refreshing market data...');
+        loadMarketData('all', 'change', 'desc');
+      }
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, [trendingStocks.length]);
+
   return {
     trendingStocks,
     marketIndices,

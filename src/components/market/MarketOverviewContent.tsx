@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -10,6 +9,7 @@ import { MyWatchlistCard } from './MyWatchlistCard';
 import { MarketFilters } from './MarketFilters';
 import { StockTable } from './StockTable';
 import { DetailedStockView } from './DetailedStockView';
+import { LoadingScreen } from './LoadingScreen';
 import { exportToCSV } from '../../utils/marketUtils';
 import { useAuth } from '../../contexts/AuthContext';
 import { useMarketData } from '../../hooks/useMarketData';
@@ -115,16 +115,9 @@ export const MarketOverviewContent: React.FC = () => {
     setRowsToShow(rows);
   };
 
+  // Show loading screen with timer
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <h3 className="text-lg font-semibold">🔴 Loading Live Market Data</h3>
-          <p className="text-muted-foreground">Fetching real-time prices...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen isLoading={isLoading} />;
   }
 
   if (error && trendingStocks.length === 0) {

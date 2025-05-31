@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { TrendingUp, Users, DollarSign } from 'lucide-react';
 
 interface MarketStatsHeaderProps {
   stockCount: number;
@@ -7,31 +8,44 @@ interface MarketStatsHeaderProps {
 
 export const MarketStatsHeader: React.FC<MarketStatsHeaderProps> = ({ stockCount }) => {
   return (
-    <div className="bg-muted/30 border-b w-full">
-      <div className="w-full px-6 py-4">
-        <div className="flex flex-wrap items-center gap-6 text-sm">
-          <div className="flex items-center space-x-2">
-            <span className="text-muted-foreground">Stocks:</span>
-            <span className="font-medium">{stockCount}</span>
+    <div className="w-full px-6 py-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+      <div className="w-full">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Market Overview</h1>
+            <p className="text-blue-100">
+              🔴 LIVE: Real-time market data from Yahoo Finance
+            </p>
           </div>
-          <div className="flex items-center space-x-2">
-            <span className="text-muted-foreground">Exchanges:</span>
-            <span className="font-medium">3</span>
+          <div className="text-right">
+            <div className="text-2xl font-bold">{stockCount}</div>
+            <div className="text-blue-100">Live Stocks</div>
           </div>
-          <div className="flex items-center space-x-2">
-            <span className="text-muted-foreground">Market Cap:</span>
-            <span className="font-medium">$45.2T</span>
-            <span className="text-green-600">↗ 2.1%</span>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="flex items-center space-x-3 bg-white/10 rounded-lg p-4">
+            <TrendingUp className="w-8 h-8" />
+            <div>
+              <div className="text-sm text-blue-100">Market Status</div>
+              <div className="text-lg font-semibold">Live Trading</div>
+            </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <span className="text-muted-foreground">24h Vol:</span>
-            <span className="font-medium">$2.1T</span>
-            <span className="text-green-600">↗ 5.4%</span>
+          
+          <div className="flex items-center space-x-3 bg-white/10 rounded-lg p-4">
+            <Users className="w-8 h-8" />
+            <div>
+              <div className="text-sm text-blue-100">Data Source</div>
+              <div className="text-lg font-semibold">Yahoo Finance</div>
+            </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <span className="text-muted-foreground">Dominance:</span>
-            <span className="font-medium">AAPL: 7.2%</span>
-            <span className="font-medium">MSFT: 6.8%</span>
+          
+          <div className="flex items-center space-x-3 bg-white/10 rounded-lg p-4">
+            <DollarSign className="w-8 h-8" />
+            <div>
+              <div className="text-sm text-blue-100">Update Frequency</div>
+              <div className="text-lg font-semibold">Real-time</div>
+            </div>
           </div>
         </div>
       </div>

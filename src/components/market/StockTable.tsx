@@ -65,7 +65,12 @@ export const StockTable: React.FC<StockTableProps> = ({
   selectedStocks,
   onToggleStock,
 }) => {
-  const displayedStocks = filteredStocks.slice(0, rowsToShow);
+  // Remove duplicates based on symbol
+  const uniqueStocks = filteredStocks.filter((stock, index, arr) => 
+    arr.findIndex(s => s.symbol === stock.symbol) === index
+  );
+  
+  const displayedStocks = uniqueStocks.slice(0, rowsToShow);
   
   const isStockSelected = (stock: Stock) => {
     return selectedStocks.some(s => s.symbol === stock.symbol);
@@ -79,6 +84,7 @@ export const StockTable: React.FC<StockTableProps> = ({
 
   console.log('StockTable: rowsToShow =', rowsToShow);
   console.log('StockTable: filteredStocks.length =', filteredStocks.length);
+  console.log('StockTable: uniqueStocks.length =', uniqueStocks.length);
   console.log('StockTable: displayedStocks.length =', displayedStocks.length);
   console.log('StockTable: selectedStocks.length =', selectedStocks.length);
 
