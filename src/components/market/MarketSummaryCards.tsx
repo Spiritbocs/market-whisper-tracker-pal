@@ -1,8 +1,8 @@
 
-import React from 'react';
-import { TrendingUp, TrendingDown } from 'lucide-react';
-import { ChartContainer } from '@/components/ui/chart';
-import { AreaChart, Area } from 'recharts';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { TrendingUp, TrendingDown, Activity, DollarSign } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 import { Stock } from '../../types';
 
 interface MarketSummaryCardsProps {
@@ -14,140 +14,161 @@ interface MarketSummaryCardsProps {
 export const MarketSummaryCards: React.FC<MarketSummaryCardsProps> = ({
   trendingStocks,
   marketCapData,
-  volumeData,
+  volumeData
 }) => {
+  const [currentStats, setCurrentStats] = useState({
+    totalMarketCap: 0,
+    gainers: 0,
+    losers: 0,
+    avgVolume: 0
+  });
+
+  // Calculate real-time statistics
+  useEffect(() => {
+    if (trendingStocks.length > 0) {
+      const totalMarketCap = trendingStocks.reduce((sum, stock) => 
+        sum + (stock.marketCap || 0), 0
+      ) / 1e12; // Convert to trillions
+
+      const gainers = trendingStocks.filter(stock => stock.changePercent > 0).length;
+      const losers = trendingStocks.filter(stock => stock.changePercent < 0).length;
+      
+      const avgVolume = trendingStocks.reduce((sum, stock) => 
+        sum + (stock.volume || 0), 0
+      ) / trendingStocks.length / 1e9; // Convert to billions
+
+      setCurrentStats({
+        totalMarketCap: Number(totalMarketCap.toFixed(1)),
+        gainers,
+        losers,
+        avgVolume: Number(avgVolume.toFixed(1))
+      });
+    }
+  }, [trendingStocks]);
+
+  // Simulate real-time updates for the chart data
+  const [liveMarketCapData, setLiveMarketCapData] = useState(marketCapData);
+  const [liveVolumeData, setLiveVolumeData] = useState(volumeData);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Update market cap data with small variations
+      setLiveMarketCapData(prev => {
+        const newData = [...prev];
+        const lastValue = newData[newData.length - 1].value;
+        const variation = (Math.random() - 0.5) * 0.2; // ±0.1 variation
+        const newValue = Math.max(0, lastValue + variation);
+        
+        newData.shift(); // Remove first element
+        newData.push({
+          time: new Date().toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: false 
+          }),
+          value: Number(newValue.toFixed(1))
+        });
+        
+        return newData;
+      });
+
+      // Update volume data with small variations
+      setLiveVolumeData(prev => {
+        const newData = [...prev];
+        const lastValue = newData[newData.length - 1].value;
+        const variation = (Math.random() - 0.5) * 0.1; // ±0.05 variation
+        const newValue = Math.max(0, lastValue + variation);
+        
+        newData.shift(); // Remove first element
+        newData.push({
+          time: new Date().toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: false 
+          }),
+          value: Number(newValue.toFixed(1))
+        });
+        
+        return newData;
+      });
+    }, 5000); // Update every 5 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
-      {/* Trending Stocks */}
-      <div className="bg-card border rounded-lg p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold flex items-center">
-            <TrendingUp className="w-5 h-5 mr-2 text-blue-500" />
-            Trending Stocks
-          </h3>
-        </div>
-        <div className="space-y-3">
-          {trendingStocks.slice(0, 3).map((stock, index) => (
-            <div key={stock.symbol} className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <span className="text-sm text-muted-foreground w-4">{index + 1}</span>
-                <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center text-xs font-medium">
-                  {stock.symbol.slice(0, 1)}
-                </div>
-                <div>
-                  <div className="font-medium text-sm">{stock.symbol}</div>
-                  <div className="text-xs text-muted-foreground">${stock.price.toFixed(2)}</div>
-                </div>
-              </div>
-              <div className={`text-sm font-medium ${stock.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {stock.changePercent >= 0 ? '+' : ''}{stock.changePercent.toFixed(2)}%
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Today's Stock Prices by Market Cap</CardTitle>
+          <DollarSign className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">${currentStats.totalMarketCap}T</div>
+          <div className="h-[80px] mt-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={liveMarketCapData}>
+                <XAxis dataKey="time" hide />
+                <YAxis hide />
+                <Line 
+                  type="monotone" 
+                  dataKey="value" 
+                  stroke="#8884d8" 
+                  strokeWidth={2}
+                  dot={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* Market Cap */}
-      <div className="bg-card border rounded-lg p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">Market Cap</h3>
-        </div>
-        <div className="space-y-2">
-          <div className="text-3xl font-bold">$45.33T</div>
-          <div className="text-red-600 text-sm flex items-center">
-            <TrendingDown className="w-4 h-4 mr-1" />
-            3.14% (24h)
-          </div>
-          <div className="text-xs text-muted-foreground mb-3">
-            Dominance: AAPL: 7.2% MSFT: 6.8%
-          </div>
-          <ChartContainer config={{ value: { label: 'Market Cap', color: '#ef4444' } }} className="h-16">
-            <AreaChart data={marketCapData}>
-              <Area 
-                type="monotone" 
-                dataKey="value" 
-                stroke="#ef4444" 
-                fill="#ef4444" 
-                fillOpacity={0.2}
-                strokeWidth={2}
-              />
-            </AreaChart>
-          </ChartContainer>
-          <div className="text-xs text-muted-foreground mt-2">
-            Market cap changes over time
-          </div>
-        </div>
-      </div>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Market Gainers</CardTitle>
+          <TrendingUp className="h-4 w-4 text-green-600" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold text-green-600">{currentStats.gainers}</div>
+          <p className="text-xs text-muted-foreground">stocks with positive change</p>
+        </CardContent>
+      </Card>
 
-      {/* 24h Volume */}
-      <div className="bg-card border rounded-lg p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">24h Volume</h3>
-        </div>
-        <div className="space-y-2">
-          <div className="text-3xl font-bold">$147.89B</div>
-          <div className="text-green-600 text-sm flex items-center">
-            <TrendingUp className="w-4 h-4 mr-1" />
-            14.10% (24h)
-          </div>
-          <div className="text-xs text-muted-foreground mb-3">
-            Total trading volume across all exchanges
-          </div>
-          <ChartContainer config={{ value: { label: 'Volume', color: '#22c55e' } }} className="h-16">
-            <AreaChart data={volumeData}>
-              <Area 
-                type="monotone" 
-                dataKey="value" 
-                stroke="#22c55e" 
-                fill="#22c55e" 
-                fillOpacity={0.2}
-                strokeWidth={2}
-              />
-            </AreaChart>
-          </ChartContainer>
-          <div className="text-xs text-muted-foreground mt-2">
-            Trading activity increasing
-          </div>
-        </div>
-      </div>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Market Losers</CardTitle>
+          <TrendingDown className="h-4 w-4 text-red-600" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold text-red-600">{currentStats.losers}</div>
+          <p className="text-xs text-muted-foreground">stocks with negative change</p>
+        </CardContent>
+      </Card>
 
-      {/* Fear & Greed */}
-      <div className="bg-card border rounded-lg p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">Fear & Greed</h3>
-        </div>
-        <div className="text-center space-y-3">
-          <div className="text-3xl font-bold">61</div>
-          <div className="text-sm text-orange-600 font-medium">Greed</div>
-          <div className="relative w-20 h-20 mx-auto">
-            <svg className="w-20 h-20 transform -rotate-90" viewBox="0 0 36 36">
-              <path
-                d="M18 2.0845
-                  a 15.9155 15.9155 0 0 1 0 31.831
-                  a 15.9155 15.9155 0 0 1 0 -31.831"
-                fill="none"
-                stroke="#e5e7eb"
-                strokeWidth="2"
-              />
-              <path
-                d="M18 2.0845
-                  a 15.9155 15.9155 0 0 1 0 31.831
-                  a 15.9155 15.9155 0 0 1 0 -31.831"
-                fill="none"
-                stroke="#f97316"
-                strokeWidth="2"
-                strokeDasharray="61, 100"
-              />
-            </svg>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-lg font-bold">61</span>
-            </div>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Average Volume</CardTitle>
+          <Activity className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{currentStats.avgVolume}B</div>
+          <div className="h-[80px] mt-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={liveVolumeData}>
+                <XAxis dataKey="time" hide />
+                <YAxis hide />
+                <Line 
+                  type="monotone" 
+                  dataKey="value" 
+                  stroke="#82ca9d" 
+                  strokeWidth={2}
+                  dot={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
-          <div className="text-xs text-muted-foreground">
-            Based on volatility, momentum, volume, and social sentiment
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

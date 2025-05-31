@@ -8,8 +8,8 @@ interface MarketStatsHeaderProps {
 
 export const MarketStatsHeader: React.FC<MarketStatsHeaderProps> = ({ stockCount }) => {
   return (
-    <div className="w-full px-6 py-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-      <div className="w-full">
+    <div className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+      <div className="w-full px-6 py-6">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-3xl font-bold mb-2">Market Overview</h1>
