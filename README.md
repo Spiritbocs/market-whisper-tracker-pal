@@ -46,20 +46,29 @@ cd <YOUR_PROJECT_NAME>
 # 3. Install dependencies
 npm install
 
+```
+
+## 📅 Create a database with Supabase(*optional)
+
+ you can choose to use the one we provide which is already hardcoded into the system and will be fine to use so there are no sensitive data
+ 
+- or you can create your own database
+ -- simply replace your `project_id` located in the `supabase/config.toml`
+ -- just replace line 1 `project_id = "yourownprojectid"` with your own which can be found in the **url bar** https://supabase.com/dashboard/project/``yourprojectidwillbehere``
+
 # 4. Launch the development server
 npm run dev
-
-```
 
 ## What technologies are used for this project?
 
 This project is built with:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- [Vite](https://vite.dev)
+- [TypeScript](https://www.typescriptlang.org)
+- [React](https://react.dev)
+- [shadcn-ui](https://ui.shadcn.com)
+- [Tailwind CSS](https://tailwindcss.com)
+- [Supabase](https://supabase.com)
 
 🗒️ All updates and changes are automatically committed to this repo.
  
