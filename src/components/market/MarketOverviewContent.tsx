@@ -48,7 +48,9 @@ export const MarketOverviewContent: React.FC = () => {
     error,
     loadMarketData,
     loadUserWatchlistStocks,
-    updateFilteredStocks
+    updateFilteredStocks,
+    startRealTimeUpdates,
+    stopRealTimeUpdates
   } = useMarketData();
 
   const {
@@ -79,11 +81,22 @@ export const MarketOverviewContent: React.FC = () => {
 
   useEffect(() => {
     loadMarketData(activeFilter, sortBy, sortOrder);
-  }, [isAuthenticated, activeFilter, sortBy, sortOrder]);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     loadUserWatchlistStocks();
   }, [isAuthenticated]);
+
+  // Start real-time updates when component mounts
+  useEffect(() => {
+    if (trendingStocks.length > 0) {
+      startRealTimeUpdates(activeFilter, sortBy, sortOrder);
+    }
+
+    return () => {
+      stopRealTimeUpdates();
+    };
+  }, [trendingStocks.length, activeFilter, sortBy, sortOrder]);
 
   const handleFilterChange = (filter: string) => {
     setActiveFilter(filter);
@@ -128,7 +141,7 @@ export const MarketOverviewContent: React.FC = () => {
           <h3 className="text-lg font-semibold mb-2">Unable to Load Live Market Data</h3>
           <p className="text-muted-foreground mb-4">{error}</p>
           <button 
-            onClick={() => window.location.reload()} 
+            onClick={() => loadMarketData(activeFilter, sortBy, sortOrder)} 
             className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
           >
             Try Again

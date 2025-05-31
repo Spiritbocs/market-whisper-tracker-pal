@@ -23,7 +23,10 @@ export const MarketSummaryCards: React.FC<MarketSummaryCardsProps> = ({
     avgVolume: 0
   });
 
-  // Calculate real-time statistics
+  const [liveMarketCapData, setLiveMarketCapData] = useState(marketCapData);
+  const [liveVolumeData, setLiveVolumeData] = useState(volumeData);
+
+  // Calculate real-time statistics (no page refresh, just state updates)
   useEffect(() => {
     if (trendingStocks.length > 0) {
       const totalMarketCap = trendingStocks.reduce((sum, stock) => 
@@ -37,29 +40,27 @@ export const MarketSummaryCards: React.FC<MarketSummaryCardsProps> = ({
         sum + (stock.volume || 0), 0
       ) / trendingStocks.length / 1e9; // Convert to billions
 
-      setCurrentStats({
+      // Smooth transition for numbers (like CoinMarketCap)
+      setCurrentStats(prev => ({
         totalMarketCap: Number(totalMarketCap.toFixed(1)),
         gainers,
         losers,
         avgVolume: Number(avgVolume.toFixed(1))
-      });
+      }));
     }
   }, [trendingStocks]);
 
-  // Simulate real-time updates for the chart data
-  const [liveMarketCapData, setLiveMarketCapData] = useState(marketCapData);
-  const [liveVolumeData, setLiveVolumeData] = useState(volumeData);
-
+  // Real-time chart updates (smooth like CoinMarketCap)
   useEffect(() => {
     const interval = setInterval(() => {
-      // Update market cap data with small variations
+      // Update market cap data with realistic variations
       setLiveMarketCapData(prev => {
         const newData = [...prev];
         const lastValue = newData[newData.length - 1].value;
-        const variation = (Math.random() - 0.5) * 0.2; // ±0.1 variation
+        const variation = (Math.random() - 0.5) * 0.1; // Smaller, more realistic variations
         const newValue = Math.max(0, lastValue + variation);
         
-        newData.shift(); // Remove first element
+        newData.shift();
         newData.push({
           time: new Date().toLocaleTimeString('en-US', { 
             hour: '2-digit', 
@@ -72,14 +73,14 @@ export const MarketSummaryCards: React.FC<MarketSummaryCardsProps> = ({
         return newData;
       });
 
-      // Update volume data with small variations
+      // Update volume data
       setLiveVolumeData(prev => {
         const newData = [...prev];
         const lastValue = newData[newData.length - 1].value;
-        const variation = (Math.random() - 0.5) * 0.1; // ±0.05 variation
+        const variation = (Math.random() - 0.5) * 0.05; 
         const newValue = Math.max(0, lastValue + variation);
         
-        newData.shift(); // Remove first element
+        newData.shift();
         newData.push({
           time: new Date().toLocaleTimeString('en-US', { 
             hour: '2-digit', 
@@ -91,7 +92,7 @@ export const MarketSummaryCards: React.FC<MarketSummaryCardsProps> = ({
         
         return newData;
       });
-    }, 5000); // Update every 5 seconds
+    }, 3000); // Update every 3 seconds for smooth real-time feel
 
     return () => clearInterval(interval);
   }, []);
@@ -104,7 +105,9 @@ export const MarketSummaryCards: React.FC<MarketSummaryCardsProps> = ({
           <DollarSign className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">${currentStats.totalMarketCap}T</div>
+          <div className="text-2xl font-bold transition-all duration-500 ease-in-out">
+            ${currentStats.totalMarketCap}T
+          </div>
           <div className="h-[80px] mt-4">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={liveMarketCapData}>
@@ -129,7 +132,9 @@ export const MarketSummaryCards: React.FC<MarketSummaryCardsProps> = ({
           <TrendingUp className="h-4 w-4 text-green-600" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-green-600">{currentStats.gainers}</div>
+          <div className="text-2xl font-bold text-green-600 transition-all duration-500 ease-in-out">
+            {currentStats.gainers}
+          </div>
           <p className="text-xs text-muted-foreground">stocks with positive change</p>
         </CardContent>
       </Card>
@@ -140,7 +145,9 @@ export const MarketSummaryCards: React.FC<MarketSummaryCardsProps> = ({
           <TrendingDown className="h-4 w-4 text-red-600" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-red-600">{currentStats.losers}</div>
+          <div className="text-2xl font-bold text-red-600 transition-all duration-500 ease-in-out">
+            {currentStats.losers}
+          </div>
           <p className="text-xs text-muted-foreground">stocks with negative change</p>
         </CardContent>
       </Card>
@@ -151,7 +158,9 @@ export const MarketSummaryCards: React.FC<MarketSummaryCardsProps> = ({
           <Activity className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{currentStats.avgVolume}B</div>
+          <div className="text-2xl font-bold transition-all duration-500 ease-in-out">
+            {currentStats.avgVolume}B
+          </div>
           <div className="h-[80px] mt-4">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={liveVolumeData}>

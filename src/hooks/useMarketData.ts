@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { yahooFinanceService } from '../services/yahooFinanceService';
 import { Stock } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -16,11 +16,11 @@ export const useMarketData = () => {
   const [error, setError] = useState<string | null>(null);
   
   const { watchlists, isAuthenticated } = useAuth();
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const loadMarketData = async (activeFilter: string, sortBy: string, sortOrder: string) => {
+  const loadMarketData = async (activeFilter: string, sortBy: string, sortOrder: string, showToast: boolean = true) => {
     try {
       setError(null);
-      setIsLoading(true);
       
       console.log('🔴 LIVE: Loading real market data...');
       
@@ -30,7 +30,9 @@ export const useMarketData = () => {
         const filtered = filterStocks(trending, activeFilter);
         const sorted = sortStocks(filtered, sortBy, sortOrder);
         setFilteredStocks(sorted);
-        toast.success(`🔴 LIVE: Loaded ${trending.length} real stocks`);
+        if (showToast) {
+          toast.success(`🔴 LIVE: Loaded ${trending.length} real stocks`);
+        }
       }
       
       const indices = await yahooFinanceService.getMarketIndices();
@@ -46,7 +48,9 @@ export const useMarketData = () => {
     } catch (error) {
       console.error('Failed to load real market data:', error);
       setError(error.message || 'Failed to load live market data');
-      toast.error('Failed to load live market data');
+      if (showToast) {
+        toast.error('Failed to load live market data');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -77,17 +81,31 @@ export const useMarketData = () => {
     setFilteredStocks(sorted);
   };
 
-  // Real-time updates every 30 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (trendingStocks.length > 0) {
-        console.log('🔄 Auto-refreshing market data...');
-        loadMarketData('all', 'change', 'desc');
-      }
-    }, 30000); // 30 seconds
+  // Start real-time updates without page refresh
+  const startRealTimeUpdates = (activeFilter: string, sortBy: string, sortOrder: string) => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
 
-    return () => clearInterval(interval);
-  }, [trendingStocks.length]);
+    intervalRef.current = setInterval(() => {
+      console.log('🔄 Real-time update (no refresh)...');
+      loadMarketData(activeFilter, sortBy, sortOrder, false); // Don't show toast for background updates
+    }, 30000); // 30 seconds
+  };
+
+  const stopRealTimeUpdates = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      stopRealTimeUpdates();
+    };
+  }, []);
 
   return {
     trendingStocks,
@@ -99,6 +117,8 @@ export const useMarketData = () => {
     error,
     loadMarketData,
     loadUserWatchlistStocks,
-    updateFilteredStocks
+    updateFilteredStocks,
+    startRealTimeUpdates,
+    stopRealTimeUpdates
   };
 };

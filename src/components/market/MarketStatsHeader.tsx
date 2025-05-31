@@ -12,7 +12,6 @@ export const MarketStatsHeader: React.FC<MarketStatsHeaderProps> = ({ stockCount
       <div className="w-full px-6 py-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-bold mb-2">Market Overview</h1>
             <p className="text-blue-100">
               🔴 LIVE: Real-time market data from Yahoo Finance
             </p>
