@@ -25,7 +25,7 @@ export const useMarketSettings = () => {
   const [tableColumns, setTableColumns] = useState(() => loadFromLocalStorage('market-table-columns', ['rank', 'name', 'price', '1h', '24h', '7d', 'marketCap', 'volume', 'chart']));
   const [sortBy, setSortBy] = useState(() => loadFromLocalStorage('market-sort-by', 'marketCap'));
   const [sortOrder, setSortOrder] = useState(() => loadFromLocalStorage('market-sort-order', 'desc'));
-  const [rowsToShow, setRowsToShow] = useState(() => loadFromLocalStorage('market-rows-to-show', 8));
+  const [rowsToShow, setRowsToShow] = useState(() => loadFromLocalStorage('market-rows-to-show', 20));
   const [showWatchlistModal, setShowWatchlistModal] = useState(false);
   const [showCustomizeModal, setShowCustomizeModal] = useState(false);
 
@@ -47,6 +47,7 @@ export const useMarketSettings = () => {
   }, [sortOrder]);
 
   useEffect(() => {
+    console.log('Saving rowsToShow to localStorage:', rowsToShow);
     saveToLocalStorage('market-rows-to-show', rowsToShow);
   }, [rowsToShow]);
 

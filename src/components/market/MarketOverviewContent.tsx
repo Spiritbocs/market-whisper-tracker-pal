@@ -79,6 +79,12 @@ export const MarketOverviewContent: React.FC = () => {
     handleCompareSelected
   } = useStockSelection();
 
+  // Calculate displayed stock count
+  const uniqueStocks = filteredStocks.filter((stock, index, arr) => 
+    arr.findIndex(s => s.symbol === stock.symbol) === index
+  );
+  const displayedStockCount = Math.min(rowsToShow, uniqueStocks.length);
+
   useEffect(() => {
     loadMarketData(activeFilter, sortBy, sortOrder);
   }, [isAuthenticated]);
@@ -168,7 +174,10 @@ export const MarketOverviewContent: React.FC = () => {
 
   return (
     <div className="w-full bg-background min-h-screen">
-      <MarketStatsHeader stockCount={trendingStocks.length} />
+      <MarketStatsHeader 
+        stockCount={trendingStocks.length} 
+        displayedCount={displayedStockCount}
+      />
 
       <div className="w-full px-6 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">

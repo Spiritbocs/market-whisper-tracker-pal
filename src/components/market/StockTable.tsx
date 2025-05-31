@@ -65,12 +65,13 @@ export const StockTable: React.FC<StockTableProps> = ({
   selectedStocks,
   onToggleStock,
 }) => {
-  // Remove duplicates based on symbol
+  // Remove duplicates based on symbol and ensure proper row limiting
   const uniqueStocks = filteredStocks.filter((stock, index, arr) => 
     arr.findIndex(s => s.symbol === stock.symbol) === index
   );
   
-  const displayedStocks = uniqueStocks.slice(0, rowsToShow);
+  // Properly limit the displayed stocks to the exact number requested
+  const displayedStocks = uniqueStocks.slice(0, Math.min(rowsToShow, uniqueStocks.length));
   
   const isStockSelected = (stock: Stock) => {
     return selectedStocks.some(s => s.symbol === stock.symbol);
@@ -82,11 +83,12 @@ export const StockTable: React.FC<StockTableProps> = ({
     onToggleStock(stock);
   };
 
-  console.log('StockTable: rowsToShow =', rowsToShow);
-  console.log('StockTable: filteredStocks.length =', filteredStocks.length);
-  console.log('StockTable: uniqueStocks.length =', uniqueStocks.length);
-  console.log('StockTable: displayedStocks.length =', displayedStocks.length);
-  console.log('StockTable: selectedStocks.length =', selectedStocks.length);
+  console.log('StockTable Debug:');
+  console.log('- rowsToShow requested:', rowsToShow);
+  console.log('- filteredStocks.length:', filteredStocks.length);
+  console.log('- uniqueStocks.length:', uniqueStocks.length);
+  console.log('- displayedStocks.length (actual showing):', displayedStocks.length);
+  console.log('- selectedStocks.length:', selectedStocks.length);
 
   return (
     <Card className="w-full">

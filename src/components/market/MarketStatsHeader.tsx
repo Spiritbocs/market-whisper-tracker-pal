@@ -4,9 +4,10 @@ import { TrendingUp, Users, DollarSign } from 'lucide-react';
 
 interface MarketStatsHeaderProps {
   stockCount: number;
+  displayedCount: number;
 }
 
-export const MarketStatsHeader: React.FC<MarketStatsHeaderProps> = ({ stockCount }) => {
+export const MarketStatsHeader: React.FC<MarketStatsHeaderProps> = ({ stockCount, displayedCount }) => {
   return (
     <div className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white">
       <div className="w-full px-6 py-6">
@@ -17,8 +18,9 @@ export const MarketStatsHeader: React.FC<MarketStatsHeaderProps> = ({ stockCount
             </p>
           </div>
           <div className="text-right">
-            <div className="text-2xl font-bold">{stockCount}</div>
-            <div className="text-blue-100">Live Stocks</div>
+            <div className="text-2xl font-bold transition-all duration-300">{displayedCount}</div>
+            <div className="text-blue-100">Live Stocks Showing</div>
+            <div className="text-sm text-blue-200">of {stockCount} total</div>
           </div>
         </div>
         

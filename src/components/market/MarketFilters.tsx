@@ -123,10 +123,11 @@ export const MarketFilters: React.FC<MarketFiltersProps> = ({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="8">Show 8</SelectItem>
-                      <SelectItem value="16">Show 16</SelectItem>
-                      <SelectItem value="24">Show 24</SelectItem>
+                      <SelectItem value="10">Show 10</SelectItem>
+                      <SelectItem value="20">Show 20</SelectItem>
                       <SelectItem value="30">Show 30</SelectItem>
+                      <SelectItem value="50">Show 50</SelectItem>
+                      <SelectItem value="100">Show 100</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
